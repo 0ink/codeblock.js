@@ -1,0 +1,13 @@
+{
+  "main": "./codeblock.js",
+  "scripts": {
+    "test": "./tests/run.sh"
+  },
+  "devDependencies": {
+    "bash.origin": "^0.1.35"
+  },
+  "dependencies": {
+    "escape-string-regexp": "^1.0.5",
+    "traverse": "^0.6.6"
+  }
+}

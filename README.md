@@ -36,7 +36,7 @@ const CODEBLOCK = require("../codeblock");
 CODEBLOCK.patchGlobalRequire();
 
 // Load JS Source using NodeJS 'require' overlay
-const TEST = require(PATH.resolve("main.js")).TEST;
+const TEST = require("main.js").TEST;
 
 // Freeze from JS Object to JSON
 var frozen = CODEBLOCK.freezeToJSON(TEST);

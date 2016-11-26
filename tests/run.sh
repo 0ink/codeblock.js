@@ -1,7 +1,11 @@
 #!/bin/bash -e
 # Source https://github.com/bash-origin/bash.origin
 if [ -z "${BO_LOADED}" ]; then
-    . "${HOME}/.bash.origin"
+    if [ -e "node_modules/bash.origin/bash.origin" ]; then
+        . "node_modules/bash.origin/bash.origin"
+    else
+        . "${HOME}/.bash.origin"
+    fi
 fi
 function init {
     eval BO_SELF_BASH_SOURCE="$BO_READ_SELF_BASH_SOURCE"

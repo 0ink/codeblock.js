@@ -1,5 +1,6 @@
 {
   "main": "./codeblock.js",
+  "version": "0.1.0",
   "scripts": {
     "test": "./tests/run.sh"
   },

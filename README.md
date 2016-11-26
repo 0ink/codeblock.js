@@ -30,7 +30,7 @@ API
 For a list of all features see [tests/run.js](https://github.com/0ink/codeblock.js/blob/master/tests/run.js) and [tests/](https://github.com/0ink/codeblock.js/tree/master/tests).
 
 ````js
-const CODEBLOCK = require("../codeblock");
+const CODEBLOCK = require("codeblock");
 
 // Parse codeblocks in required modules
 CODEBLOCK.patchGlobalRequire();

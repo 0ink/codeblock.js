@@ -18,7 +18,12 @@ function init {
             pushd "${1}" > /dev/null
 
                 BO_log "1" "Run: ${1}"
-                node "${__BO_DIR__}/run.js"
+
+                if [ ! -z "${CIRCLE_ARTIFACTS}" ]; then
+                    node "${__BO_DIR__}/run.js" | tee "${CIRCLE_ARTIFACTS}/test.bash.log"
+                else
+                    node "${__BO_DIR__}/run.js"
+                fi
 
             popd > /dev/null
             BO_format "$VERBOSE" "FOOTER"

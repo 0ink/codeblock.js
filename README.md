@@ -15,7 +15,7 @@ exports.TEST = {
 };
 ```
 
-Such a `codeblock` is compiled for execution **at build time** or using a **require overlay**.
+Such a `codeblock` is compiled for execution **at build time** or using a **require overlay** in NodeJS.
 
 Install
 -------
@@ -26,9 +26,9 @@ Install
 API
 ---
 
-For a list of all features see [tests/run.js](https://github.com/0ink/codeblock.js/blob/source/tests/run.js) and [tests/](https://github.com/0ink/codeblock.js/tree/source/tests).
+For a list of all features see [tests/run.js](https://github.com/0ink/codeblock.js/blob/master/tests/run.js) and [tests/](https://github.com/0ink/codeblock.js/tree/master/tests).
 
-```
+````js
 const CODEBLOCK = require("../codeblock");
 
 // Parse codeblocks in required modules
@@ -55,7 +55,7 @@ var made = CODEBLOCK.makeAll(obj);
 // Run all codeblocks (for use in NodeJS)
 var result = CODEBLOCK.runAll(made);
 
-```
+````
 
 
 Formats

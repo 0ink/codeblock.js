@@ -136,4 +136,4 @@ exports.TEST = {
 Provenance
 ==========
 
-Original source logic under [MIT](https://opensource.org/licenses/MIT) by [Christoph Dorn](http://christophdorn.com/)
+Original source logic under [MIT License](https://opensource.org/licenses/MIT) by [Christoph Dorn](http://christophdorn.com/).

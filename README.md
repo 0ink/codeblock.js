@@ -2,10 +2,10 @@ codeblock.js
 ============
 
 Adds **Code Block support to JavaScript**. A `codeblock` is **source code** of some kind,
-wrapped in a syntax that specifies boundaries `lang (arg) >>>CODE<<<` and variables `%%arg%%` to be replaced.
+wrapped in a syntax that specifies boundaries `lang (arg) >>>CODE<<<` and variables `%%%arg%%%` to be replaced.
 
 **main.js**
-```
+````js
 exports.TEST = {
     "main": (javascript () >>>
 
@@ -13,7 +13,7 @@ exports.TEST = {
 
     <<<)
 };
-```
+````
 
 Such a `codeblock` is compiled for execution **at build time** or using a **require overlay** in NodeJS.
 
@@ -65,7 +65,7 @@ Formats
 
 ## Source
 
-```
+````js
 exports.TEST = {
     "data": {
         "message": "Hello World"
@@ -77,22 +77,22 @@ exports.TEST = {
 
     <<<)
 }
-```
+````
 
 ## Frozen
 
-```
+````js
 exports.TEST = {
     "data": {
         "message": "Hello World"
     },
     "main": "{\".@\":\"github.com~0ink~codeblock/codeblock:Codeblock\",\"_code\":\"console.log(\\\"%%%data.message%%%\\\");\\nconsole.log(data.message);\",\"_format\":\"javascript\",\"_args\":[\"data\"]}"
 }
-```
+````
 
 ## JS Object
 
-```
+````js
 exports.TEST = {
     data: {
         message: 'Hello World'
@@ -108,14 +108,14 @@ exports.TEST = {
         }     
     }
 }
-```
+````
 
 ## Made
 
 **NOTE:** The *made* format has all `%%%` delimited variables replaced and cannot be converted
 back to the other formats due to this fact.
 
-```
+````js
 exports.TEST = {
     "data": {
         "message": "Hello World"
@@ -129,7 +129,7 @@ exports.TEST = {
         ]
     }
 }
-```
+````
 
 
 Provenance

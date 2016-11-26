@@ -20,8 +20,9 @@ Such a `codeblock` is compiled for execution **at build time** or using a **requ
 Install
 -------
 
-    npm install codeblock --save
-
+````sh
+npm install codeblock --save
+````
 
 API
 ---

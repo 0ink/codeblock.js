@@ -24,7 +24,7 @@ function init {
                 BO_log "1" "Run: ${1}"
 
                 if [ ! -z "${CIRCLE_ARTIFACTS}" ]; then
-                    node "${__BO_DIR__}/run.js" | tee "${CIRCLE_ARTIFACTS}/test.bash.log"
+                    node "${__BO_DIR__}/run.js" 2>&1 |& tee "${CIRCLE_ARTIFACTS}/test.bash.log"
                 else
                     node "${__BO_DIR__}/run.js"
                 fi

@@ -1,11 +1,13 @@
 
 const REGEXP_ESCAPE = require("escape-string-regexp");
+const FS = require("fs");
 
 
-var Codeblock = exports.Codeblock = function (code, format) {
+var Codeblock = exports.Codeblock = function (code, format, args) {
     this[".@"] = "github.com~0ink~codeblock/codeblock:Codeblock";
     this._code = code;
     this._format = format;
+    this._args = args;
 }
 Codeblock.prototype.toString = function () {
     return JSON.stringify(this);
@@ -15,12 +17,13 @@ Codeblock.prototype.make = function (variables) {
     var re = /(?:^|\n)(.*?)(%%%([^%]+)%%%)/g;
     var match = null;
     while ( (match = re.exec(code)) ) {
-        var varParts = match[3].split("/");
+        var varParts = match[3].split(".");
         var val = variables;
         while (varParts.length > 0) {
             val = val[varParts.shift()];
             if (typeof val === "undefined") {
-                throw new Error("Variable '" + match[3] + "' not declared while processing code section in file '" + uri + "'!");
+                console.error("variables", variables);
+                throw new Error("Variable '" + match[3] + "' not found while processing code section!");
             }
         }
         code = code.replace(new RegExp(REGEXP_ESCAPE(match[2]), "g"), val.split("\n").map(function (line, i) {
@@ -30,7 +33,7 @@ Codeblock.prototype.make = function (variables) {
             return line;
         }).join("\n"));
     }
-    return new Codeblock(code, this._format);
+    return new Codeblock(code, this._format, this._args);
 }
 Codeblock.thaw = function (ice) {
     if (typeof ice === "string") {
@@ -40,7 +43,9 @@ Codeblock.thaw = function (ice) {
     delete ice.this;
     var format = ice._format;
     delete ice._format;
-    var inst = new Codeblock(code, format);
+    var args = ice._args;
+    delete ice._args;
+    var inst = new Codeblock(code, format, args);
     Object.keys(ice).forEach(function (key) {
         inst[key] = ice[key];
     });
@@ -90,18 +95,23 @@ exports.freezeToSource = function (obj) {
         for (var i=0;i<match[1].length;i++) indent += " ";
 
         var codeblock = blocks[parseInt(match[4])];
+
         var code = [
-            "(" + codeblock._format + " () >>>",
-            "",
-            codeblock._code.split("\n").map(function (line, i) {
-                return ("    " + line);
-            }).join("\n"),
+            "(" + codeblock._format + " (" + codeblock._args.join(", ") + ") >>>",
+            ""
+        ];
+        code = code.concat(codeblock._code.split("\n").map(function (line, i) {
+            return ("    " + line);
+        }));
+        code = code.concat([
             "",
             "<<<)"
-        ].map(function (line, i) {
+        ]);
+        code = code.map(function (line, i) {
             if (i === 0) return line;
             return (indent + line);
         }).join("\n");
+
         source = source.replace(new RegExp(REGEXP_ESCAPE(match[3]), "g"), code);
     }
 
@@ -121,19 +131,22 @@ exports.thawFromJSON = function (json) {
     });
 }
 
-exports.makeAll = function (obj, data) {
+exports.makeAll = function (obj) {
     const TRAVERSE = require("traverse");
     return TRAVERSE(obj).map(function (value) {
         if (
             typeof value === "object" &&
             value['.@'] === 'github.com~0ink~codeblock/codeblock:Codeblock'
         ) {
-            value = value.make(data);
+            value = value.make(this.parent.node);
         }
         this.update(value);
     });
 }
 
+exports.runAll = function (obj) {
+    return {};
+}
 
 exports.patchGlobalRequire = function () {
 
@@ -144,8 +157,8 @@ exports.patchGlobalRequire = function () {
     var Module = require('module');
 
     // @see https://github.com/bahmutov/really-need/blob/master/index.js#L142
-    function ___WrApCoDe___ (format, _code, uri) {
-        return function (variables) {
+    function ___WrApCoDe___ (format, args, _code, uri) {
+        return function WrappedCodeblock (variables) {
             var code = _code;
             var re = /(?:$|\n)(.*?)(%{3}([^%]+)%{3})/g;
             var match = null;
@@ -165,7 +178,7 @@ exports.patchGlobalRequire = function () {
                     return line;
                 }).join("\n"));
             }
-            return new (require("$$__filename$$").Codeblock)(code, format);
+            return new (require("$$__filename$$").Codeblock)(code, format, args);
         };
     }
     var originalRequire = Module.prototype.require;
@@ -176,13 +189,17 @@ exports.patchGlobalRequire = function () {
             var code = FS.readFileSync(path, "utf8");
 
             code = code.replace(/\n/g, '\\n');
-            var re = /(?:\(|=|,|\?)\s*(([\w\d]+)\s*\(\)\s+>{3}\s*\\n(.*?)\\n\s*<{3})\s*(?:\\n|\)|;)/g;
+            var re = /(?:\(|=|,|\?)\s*(([\w\d]+)\s*\(([^\)]*)\)\s+>{3}\s*\\n(.*?)\\n\s*<{3})\s*(?:\\n|\)|;)/g;
 
             if (/>{3}\s*\\n(.*?)\\n\s*<{3}/.test(code)) {
 
                 var match = null;
                 while ( (match = re.exec(code)) ) {
-                    var lines = match[3].split("\\n");
+
+                    var args = match[3].replace(/\s/g, "");
+                    args = (args !== "") ? args.split(",") : [];
+
+                    var lines = match[4].split("\\n");
                     // Strip empty lines from start
                     while (true) {
                         if (!/^[\s\t]*$/.test(lines[0])) {
@@ -202,12 +219,18 @@ exports.patchGlobalRequire = function () {
                         return line.replace(lineRe, "");
                     });
                     code = code.replace(new RegExp(REGEXP_ESCAPE(match[1]), "g"), [
-                        '___WrApCoDe___("' + match[2] + '", "',
+                        '___WrApCoDe___("' + match[2] + '", ' + JSON.stringify(args) + ', "',
                         lines.join("\\n").replace(/"/g, '\\"').replace(/\\n/g, "___NeWlInE___"),
                         '","' + uri + '")'
                     ].join(""));
                 }
                 code = ___WrApCoDe___.toString().replace(/\$\$__filename\$\$/g, __dirname) + ";\n" + code.replace(/\\n/g, "\n").replace(/___NeWlInE___/g, "\\n");
+
+
+                // TODO: Make configurable
+                //var compiledPath = LIB.PATH.join(path, "..", ".io/cache.modules", LIB.PATH.basename(path));
+                var compiledPath = path + "~.compiled.js";
+                FS.writeFileSync(compiledPath, code, "utf8");
 
 
                 var mod = new Module(path, this);

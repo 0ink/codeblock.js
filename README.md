@@ -2,7 +2,7 @@ codeblock.js
 ============
 
 Adds **Code Block support to JavaScript**. A `codeblock` is **source code** of some kind,
-wrapped in a syntax that specifies boundaries `(lang (arg) >>>CODE<<<)` and variables `%%%arg%%%` to be replaced.
+wrapped in a syntax that specifies boundaries `(LANGUAGE (ARG) >>>CODE<<<)` and variables `%%%ARG%%%` to be replaced.
 
 **main.js**
 ````js

@@ -1,6 +1,8 @@
 codeblock.js
 ============
 
+[![CircleCI](https://circleci.com/gh/0ink/codeblock.js.svg?style=svg)](https://circleci.com/gh/0ink/codeblock.js)
+
 Adds **Code Block support to JavaScript**. A `codeblock` is **source code** of some kind,
 wrapped in a syntax that specifies boundaries `(LANGUAGE (ARG) >>>CODE<<<)` and variables `%%%ARG%%%` to be replaced.
 

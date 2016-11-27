@@ -48,6 +48,8 @@ function init {
         else
             runLogPath="tests/.run.bash.log"
         fi
+        # TODO: Use NodeJS to split output to log and stdout so we can stream to remote socket
+        #       and preserve escape characters.
         BO_sourcePrototype "${__BO_DIR__}/run.sh" Run 2>&1 | tee "$runLogPath"
 
         # TODO: Write test result to $CIRCLE_TEST_REPORTS/tests.run.result.xml

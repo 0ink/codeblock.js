@@ -33,33 +33,33 @@ function showDiff (actual, expected) {
 }
 
 
-// Parse codeblocks in required modules
+// Parse codeblocks in required JavaScript modules
 CODEBLOCK.patchGlobalRequire();
 
-// Load JS Source using NodeJS 'require' overlay
+// Load JavaScript Source using NodeJS 'require' overlay
 const TEST = require(PATH.resolve("main.js")).TEST;
 log('obj', UTIL.inspect(TEST, { showHidden: true, depth: null }));
 log("obj", JSON.stringify(TEST, null, 4));
 
-// Freeze from JS Object to JSON
+// Freeze from JavaScript Object to JSON
 var frozen = CODEBLOCK.freezeToJSON(TEST);
 log("frozen", JSON.stringify(JSON.parse(frozen), null, 4));
 
 
-// That from JSON to JS Object again
+// Thaw from JSON to JavaScript Object again
 var obj = CODEBLOCK.thawFromJSON(frozen);
-log('obj', UTIL.inspect(TEST, { showHidden: true, depth: null }));
+log('obj', UTIL.inspect(obj, { showHidden: true, depth: null }));
 log("obj", JSON.stringify(obj, null, 4));
 
 
-// Re-Freeze from JS Object to JSON
+// Re-Freeze from JavaScript Object to JSON
 var refrozen = CODEBLOCK.freezeToJSON(obj);
 log("refrozen", JSON.stringify(JSON.parse(refrozen), null, 4));
 
 ASSERT.deepEqual(refrozen, frozen);
 
 
-// Freeze from JS Object back to original JS Source
+// Freeze from JavaScript Object back to original JS Source
 var source = CODEBLOCK.freezeToSource(obj);
 source = [
     "",
@@ -79,21 +79,21 @@ if (source !== FS.readFileSync("main.js", "utf8")) {
 showDiff(FS.readFileSync("main.js", "utf8"), source);
 
 
-// Prepare all codeblocks for running
+// Compile all codeblocks for running
 FS.writeFileSync(".parsed.js", JSON.stringify(obj, null, 4), "utf8");
-var made = CODEBLOCK.makeAll(obj);
-log("made", JSON.stringify(made, null, 4));
+var compiled = CODEBLOCK.compileAll(obj);
+log("compiled", JSON.stringify(compiled, null, 4));
 if (process.env.VERBOSE) {
-    FS.writeFileSync(".made.js", JSON.stringify(made, null, 4), "utf8");
+    FS.writeFileSync(".compiled.js", JSON.stringify(compiled, null, 4), "utf8");
 } else {
-    if (JSON.stringify(made, null, 4) !== FS.readFileSync(".made.js", "utf8")) {
+    if (JSON.stringify(compiled, null, 4) !== FS.readFileSync(".compiled.js", "utf8")) {
         // TODO: Signal fail
     }
 }
-showDiff(FS.readFileSync(".made.js", "utf8"), JSON.stringify(made, null, 4));
+showDiff(FS.readFileSync(".compiled.js", "utf8"), JSON.stringify(compiled, null, 4));
 
 // Run all codeblocks and verify results
-var result = CODEBLOCK.runAll(made);
+var result = CODEBLOCK.runAll(compiled);
 log("result", JSON.stringify(result, null, 4));
 if (process.env.VERBOSE) {
     FS.writeFileSync(".result.js", JSON.stringify(result, null, 4), "utf8");

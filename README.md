@@ -34,26 +34,26 @@ For a list of all features see [tests/run.js](https://github.com/0ink/codeblock.
 ````js
 const CODEBLOCK = require("codeblock");
 
-// Parse codeblocks in required modules
+// Parse codeblocks in required JavaScript modules
 CODEBLOCK.patchGlobalRequire();
 
-// Load JS Source using NodeJS 'require' overlay
+// Load JavaScript Source using NodeJS 'require' overlay
 const TEST = require("main.js").TEST;
 
-// Freeze from JS Object to JSON
+// Freeze from JavaScript Object to JSON
 var frozen = CODEBLOCK.freezeToJSON(TEST);
 
-// That from JSON to JS Object again
+// Thaw from JSON to JavaScript Object again
 var obj = CODEBLOCK.thawFromJSON(frozen);
 
-// Re-Freeze from JS Object to JSON
+// Re-Freeze from JavaScript Object to JSON
 var refrozen = CODEBLOCK.freezeToJSON(obj);
 
-// Freeze from JS Object back to original JS Source
+// Freeze from JavaScript Object back to original JavaScript Source
 var source = CODEBLOCK.freezeToSource(obj);
 
-// Prepare all codeblocks for running
-var made = CODEBLOCK.makeAll(obj);
+// Compile all codeblocks for running
+var compiled = CODEBLOCK.compileAll(obj);
 
 // Run all codeblocks (for use in NodeJS)
 var result = CODEBLOCK.runAll(made);
@@ -61,12 +61,12 @@ var result = CODEBLOCK.runAll(made);
 ````
 
 
-Formats
-=======
+Source Formats
+==============
 
-`codeblock` supports converting between the following **interchangeable** formats.
+`codeblock` supports converting between the following **interchangeable** source formats.
 
-## Source
+## JavaScript Source
 
 ````js
 exports.TEST = {
@@ -78,22 +78,31 @@ exports.TEST = {
         console.log("%%%data.message%%%");
         console.log(data.message);
 
+        return data.message;
     <<<)
 }
 ````
 
-## Frozen
+## JSON
 
 ````js
 exports.TEST = {
     "data": {
         "message": "Hello World"
     },
-    "main": "{\".@\":\"github.com~0ink~codeblock/codeblock:Codeblock\",\"_code\":\"console.log(\\\"%%%data.message%%%\\\");\\nconsole.log(data.message);\",\"_format\":\"javascript\",\"_args\":[\"data\"]}"
+    "main": {
+        ".@": "github.com~0ink~codeblock/codeblock:Codeblock",
+        "_code": "\nconsole.log(\"%%%data.message%%%\");\nconsole.log(data.message);\n\nreturn data.message;",
+        "_format": "javascript",
+        "_args": [
+            "data"
+        ],
+        "_compiled": false
+    }
 }
 ````
 
-## JS Object
+## JavaScript Instanciated
 
 ````js
 exports.TEST = {
@@ -113,10 +122,15 @@ exports.TEST = {
 }
 ````
 
-## Made
+Target Formats
+==============
 
-**NOTE:** The *made* format has all `%%%` delimited variables replaced and cannot be converted
-back to the other formats due to this fact.
+**NOTE:** The target formats cannot be converted back to their original source formats
+as information is typically lost in the process of converting from source to target.
+
+## Compiled
+
+All `%%%` delimited variables are replaced with variables passed in as argument.
 
 ````js
 exports.TEST = {
@@ -125,7 +139,7 @@ exports.TEST = {
     },
     "main": {
         ".@": "github.com~0ink~codeblock/codeblock:Codeblock",
-        "_code": "console.log(\"Hello World\");\nconsole.log(data.message);",
+        "_code": "\nconsole.log(\"Hello World\");\nconsole.log(data.message);\n\nreturn data.message;",
         "_format": "javascript",
         "_args": [
             "data"
@@ -134,6 +148,19 @@ exports.TEST = {
 }
 ````
 
+## Executed
+
+The `codeblock` is run using an interpreter and the result replaces the
+original `codeblock`.
+
+````js
+exports.TEST = {
+    "data": {
+        "message": "Hello World"
+    },
+    "main": "Hello World"
+}
+````
 
 Provenance
 ==========

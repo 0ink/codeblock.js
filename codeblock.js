@@ -8,11 +8,13 @@ var Codeblock = exports.Codeblock = function (code, format, args) {
     this._code = code;
     this._format = format;
     this._args = args;
+    this._compiled = false;
 }
 Codeblock.prototype.toString = function () {
-    return JSON.stringify(this);
+    var obj = JSON.stringify(this);
+    return JSON.parse(obj);
 }
-Codeblock.prototype.make = function (variables) {
+Codeblock.prototype.compile = function (variables) {
     var code = this._code;
     var re = /(?:^|\n)(.*?)(%%%([^%]+)%%%)/g;
     var match = null;
@@ -33,7 +35,27 @@ Codeblock.prototype.make = function (variables) {
             return line;
         }).join("\n"));
     }
-    return new Codeblock(code, this._format, this._args);
+    var codeblock = new Codeblock(code, this._format, this._args);
+    codeblock._compiled = true;
+    return codeblock;
+}
+Codeblock.prototype.run = function (variables) {
+    const VM = require('vm');
+    if (!this._compiled) {
+        var codeblock = this.compile(variables);
+        return codeblock.run(variables);
+    }
+    var script = new VM.Script('console.log(ARGS); RESULT = (function (' + this._args.join(', ') + ') { ' + this._code + ' }).apply(null, ARGS);');
+    var sandbox = {
+        console: (process.env.VERBOSE) ? console : {
+            log: function () {}
+        },
+        ARGS: this._args.map(function (name) {
+            return variables[name];
+        })
+    };
+    script.runInNewContext(sandbox);
+    return sandbox.RESULT || null;
 }
 Codeblock.thaw = function (ice) {
     if (typeof ice === "string") {
@@ -58,16 +80,15 @@ exports.freezeToJSON = function (obj) {
     const TRAVERSE = require("traverse");
     return JSON.stringify(TRAVERSE(obj).map(function (value) {
         if (
+            value instanceof Codeblock
+        ) {
+            value = value.toString();
+        } else
+        if (
             typeof value === "function"
             // TODO: Test function type.
         ) {
             value = value().toString();
-        } else
-        if (
-            typeof value === "object" &&
-            value['.@'] === 'github.com~0ink~codeblock/codeblock:Codeblock'
-        ) {
-            value = value.toString();
         }
         this.update(value);
     }));
@@ -97,16 +118,12 @@ exports.freezeToSource = function (obj) {
         var codeblock = blocks[parseInt(match[4])];
 
         var code = [
-            "(" + codeblock._format + " (" + codeblock._args.join(", ") + ") >>>",
-            ""
+            "(" + codeblock._format + " (" + codeblock._args.join(", ") + ") >>>"
         ];
         code = code.concat(codeblock._code.split("\n").map(function (line, i) {
             return ("    " + line);
         }));
-        code = code.concat([
-            "",
-            "<<<)"
-        ]);
+        code = code.concat("<<<)");
         code = code.map(function (line, i) {
             if (i === 0) return line;
             return (indent + line);
@@ -126,26 +143,41 @@ exports.thawFromJSON = function (json) {
             /^\{"\.@":"github\.com~0ink~codeblock\/codeblock:Codeblock"/.test(value)
         ) {
             value = Codeblock.thaw(value);
+        } else
+        if (
+            typeof value === "object" &&
+            value['.@'] === 'github.com~0ink~codeblock/codeblock:Codeblock'
+        ) {
+            value = Codeblock.thaw(value);
         }
         this.update(value);
     });
 }
 
-exports.makeAll = function (obj) {
+exports.compileAll = function (obj) {
     const TRAVERSE = require("traverse");
     return TRAVERSE(obj).map(function (value) {
         if (
             typeof value === "object" &&
             value['.@'] === 'github.com~0ink~codeblock/codeblock:Codeblock'
         ) {
-            value = value.make(this.parent.node);
+            value = value.compile(this.parent.node);
         }
         this.update(value);
     });
 }
 
 exports.runAll = function (obj) {
-    return {};
+    const TRAVERSE = require("traverse");
+    return TRAVERSE(obj).map(function (value) {
+        if (
+            typeof value === "object" &&
+            value instanceof Codeblock
+        ) {
+            value = value.run(this.parent.node);
+        }
+        this.update(value);
+    });
 }
 
 exports.patchGlobalRequire = function () {
@@ -160,6 +192,7 @@ exports.patchGlobalRequire = function () {
     function ___WrApCoDe___ (format, args, _code, uri) {
         return function WrappedCodeblock (variables) {
             var code = _code;
+/*
             var re = /(?:$|\n)(.*?)(%{3}([^%]+)%{3})/g;
             var match = null;
             while ( (match = re.exec(code)) ) {
@@ -178,6 +211,7 @@ exports.patchGlobalRequire = function () {
                     return line;
                 }).join("\n"));
             }
+*/
             return new (require("$$__filename$$").Codeblock)(code, format, args);
         };
     }
@@ -200,12 +234,17 @@ exports.patchGlobalRequire = function () {
                     args = (args !== "") ? args.split(",") : [];
 
                     var lines = match[4].split("\\n");
+                    var lineCounts = {
+                        start: 0,
+                        end: 0
+                    };
                     // Strip empty lines from start
                     while (true) {
                         if (!/^[\s\t]*$/.test(lines[0])) {
                             break;
                         }
                         lines.shift();
+                        lineCounts.start += 1;
                     }
                     // Strip empty lines from end
                     while (true) {
@@ -213,11 +252,20 @@ exports.patchGlobalRequire = function () {
                             break;
                         }
                         lines.pop();
+                        lineCounts.end += 1;
                     }
                     var lineRe = new RegExp("^" + REGEXP_ESCAPE(lines[0].match(/^([\t\s]*)/)[0]));
                     lines = lines.map(function (line, i) {
                         return line.replace(lineRe, "");
                     });
+
+                    for (var i = 0; i < lineCounts.start ; i++) {
+                        lines.unshift("");
+                    }
+                    for (var i = 0; i < lineCounts.end ; i++) {
+                        lines.push("");
+                    }
+
                     code = code.replace(new RegExp(REGEXP_ESCAPE(match[1]), "g"), [
                         '___WrApCoDe___("' + match[2] + '", ' + JSON.stringify(args) + ', "',
                         lines.join("\\n").replace(/"/g, '\\"').replace(/\\n/g, "___NeWlInE___"),

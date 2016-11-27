@@ -49,6 +49,26 @@ function init {
             runLogPath="tests/.run.bash.log"
         fi
         BO_sourcePrototype "${__BO_DIR__}/run.sh" Run 2>&1 | tee "$runLogPath"
+
+        # TODO: Write test result to $CIRCLE_TEST_REPORTS/tests.run.result.xml
+        #<?xml version="1.0" encoding="UTF-8"?>
+        #<testsuite>
+        #  <!-- if your classname does not include a dot, the package defaults to "(root)" -->
+        #  <testcase name="my testcase" classname="my package.my classname" time="29">
+        #    <!-- If the test didn't pass, specify ONE of the following 3 cases -->
+        #    <!-- option 1 --> <skipped />
+        #    <!-- option 2 --> <failure message="my failure message">my stack trace</failure>
+        #    <!-- option 3 --> <error message="my error message">my crash report</error>
+        #    <system-out>my STDOUT dump</system-out>
+        #    <system-err>my STDERR dump</system-err>
+        #  </testcase>
+        #</testsuite>
+
+        # TODO: Get latest build artifacts and make available publickly
+        #curl https://circleci.com/api/v1.1/me?circle-token=
+        #curl https://circleci.com/api/v1.1/project/github/0ink/codeblock.js?circle-token=
+        #curl https://circleci.com/api/v1.1/project/github/0ink/codeblock.js/latest/artifacts?circle-token=
+
     fi
 }
 init "$@"

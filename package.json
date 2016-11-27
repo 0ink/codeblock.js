@@ -1,17 +1,17 @@
 {
-  "name": "codeblock",
-  "main": "./codeblock.js",
-  "version": "0.2.0",
-  "scripts": {
-    "test": "./tests/run.sh"
-  },
-  "devDependencies": {
-    "bash.origin": "^0.1.35",
-    "colors": "^1.1.2",
-    "diff": "^3.0.1"
-  },
-  "dependencies": {
-    "escape-string-regexp": "^1.0.5",
-    "traverse": "^0.6.6"
-  }
+    "name": "codeblock",
+    "main": "./codeblock.js",
+    "version": "0.2.1",
+    "scripts": {
+        "test": "./tests/run.sh"
+    },
+    "devDependencies": {
+        "bash.origin": "^0.1.35",
+        "colors": "^1.1.2",
+        "diff": "^3.0.1"
+    },
+    "dependencies": {
+        "escape-string-regexp": "^1.0.5",
+        "traverse": "^0.6.6"
+    }
 }

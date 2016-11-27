@@ -42,11 +42,13 @@ function init {
     if [ "${1}" == "Run" ]; then
         Run "$@"
     else
+        local runLogPath
         if [ ! -z "${CIRCLE_ARTIFACTS}" ]; then
-            BO_sourcePrototype "${__BO_DIR__}/run.sh" Run 2>&1 | tee "${CIRCLE_ARTIFACTS}/tests.run.bash.log"
+            runLogPath="${CIRCLE_ARTIFACTS}/tests.run.bash.log"
         else
-            BO_sourcePrototype "${__BO_DIR__}/run.sh" Run 2>&1 | tee "tests/.run.bash.log"
+            runLogPath="tests/.run.bash.log"
         fi
+        BO_sourcePrototype "${__BO_DIR__}/run.sh" Run 2>&1 | tee "$runLogPath"
     fi
 }
 init "$@"

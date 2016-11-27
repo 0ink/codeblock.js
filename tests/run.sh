@@ -23,11 +23,7 @@ function init {
 
                 BO_log "1" "Run: ${1}"
 
-                if [ ! -z "${CIRCLE_ARTIFACTS}" ]; then
-                    node "${__BO_DIR__}/run.js" 2>&1 |& tee "${CIRCLE_ARTIFACTS}/test.bash.log"
-                else
-                    node "${__BO_DIR__}/run.js"
-                fi
+                node "${__BO_DIR__}/run.js"
 
             popd > /dev/null
             BO_format "$VERBOSE" "FOOTER"
@@ -37,9 +33,20 @@ function init {
             runTest "${testPath}"
         done
 
+        echo "OK"
+
         BO_format "${VERBOSE}" "FOOTER"
     }
 
-    Run "$@"
+
+    if [ "${1}" == "Run" ]; then
+        Run "$@"
+    else
+        if [ ! -z "${CIRCLE_ARTIFACTS}" ]; then
+            BO_sourcePrototype "${__BO_DIR__}/run.sh" Run 2>&1 | tee "${CIRCLE_ARTIFACTS}/tests.run.bash.log"
+        else
+            BO_sourcePrototype "${__BO_DIR__}/run.sh" Run 2>&1 | tee "tests/.run.bash.log"
+        fi
+    fi
 }
 init "$@"

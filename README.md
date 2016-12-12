@@ -143,7 +143,8 @@ exports.TEST = {
         "_format": "javascript",
         "_args": [
             "data"
-        ]
+        ],
+        "_compiled": true
     }
 }
 ````

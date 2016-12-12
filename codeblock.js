@@ -15,6 +15,7 @@ Codeblock.prototype.toString = function () {
     return JSON.parse(obj);
 }
 Codeblock.prototype.compile = function (variables) {
+    variables = variables || {};
     var code = this._code;
     var re = /(?:^|\n)(.*?)(%%%([^%]+)%%%)/g;
     var match = null;
@@ -39,21 +40,27 @@ Codeblock.prototype.compile = function (variables) {
     codeblock._compiled = true;
     return codeblock;
 }
-Codeblock.prototype.run = function (variables) {
+Codeblock.prototype.run = function (variables, options) {
+    variables = variables || {};
+    options = options || {};
     const VM = require('vm');
     if (!this._compiled) {
         var codeblock = this.compile(variables);
         return codeblock.run(variables);
     }
-    var script = new VM.Script('console.log(ARGS); RESULT = (function (' + this._args.join(', ') + ') { ' + this._code + ' }).apply(null, ARGS);');
+    var script = new VM.Script('RESULT = (function (' + this._args.join(', ') + ') { ' + this._code + ' }).apply(THIS, ARGS);');
     var sandbox = {
-        console: (process.env.VERBOSE) ? console : {
-            log: function () {}
-        },
+        console: console,
+        THIS: options["this"] || null,
         ARGS: this._args.map(function (name) {
             return variables[name];
         })
     };
+    if (options.sandbox) {
+        Object.keys(options.sandbox).forEach(function (name) {
+            sandbox[name] = options.sandbox[name];
+        });
+    }
     script.runInNewContext(sandbox);
     return sandbox.RESULT || null;
 }
@@ -72,6 +79,137 @@ Codeblock.thaw = function (ice) {
         inst[key] = ice[key];
     });
     return inst;
+}
+
+// TODO: Document
+// TODO: Write test
+// NOTE: This is a synchronous function!
+exports.requireJSON = function (path) {
+    return exports.purifySync(path, {
+        freezeToJSON: true
+    }).code;
+}
+
+// TODO: Document
+// TODO: Write test
+// NOTE: This is a synchronous function!
+exports.require = function (path) {
+    var purified = exports.purifySync(path);
+    if (purified.purifiedPath) {
+        return require(purified.purifiedPath);
+    }
+    return require(purified.sourcePath);
+}
+
+// @see https://github.com/bahmutov/really-need/blob/master/index.js#L142
+function ___WrApCoDe___ (format, args, _code) {
+    return function WrappedCodeblock (variables) {
+        var code = _code;
+        return new (require("$$__filename$$").Codeblock)(code, format, args);
+    };
+}
+
+// TODO: Document
+// TODO: Write test
+exports.purifySync = function (path, options) {
+
+    options = options || {};
+
+    // TODO: Only recompile if need be.
+
+    var code = FS.readFileSync(path, "utf8");
+
+    code = code.replace(/\n/g, '\\n');
+    var re = /(?:\(|=|,|\?)\s*(([\w\d]+)\s*\(([^\)]*)\)\s+>{3}\s*\\n(.*?)\\n\s*<{3})\s*(?:\\n|\)|;)/g;
+
+    if (/>{3}\s*\\n(.*?)\\n\s*<{3}/.test(code)) {
+
+        var match = null;
+        while ( (match = re.exec(code)) ) {
+
+            var args = match[3].replace(/\s/g, "");
+            args = (args !== "") ? args.split(",") : [];
+
+            var lines = match[4].split("\\n");
+            var lineCounts = {
+                start: 0,
+                end: 0
+            };
+            // Strip empty lines from start
+            while (true) {
+                if (!/^[\s\t]*$/.test(lines[0])) {
+                    break;
+                }
+                lines.shift();
+                lineCounts.start += 1;
+            }
+            // Strip empty lines from end
+            while (true) {
+                if (!/^[\s\t]*$/.test(lines[lines.length-1])) {
+                    break;
+                }
+                lines.pop();
+                lineCounts.end += 1;
+            }
+            var lineRe = new RegExp("^" + REGEXP_ESCAPE(lines[0].match(/^([\t\s]*)/)[0]));
+            lines = lines.map(function (line, i) {
+                return line.replace(lineRe, "");
+            });
+
+            for (var i = 0; i < lineCounts.start ; i++) {
+                lines.unshift("");
+            }
+            for (var i = 0; i < lineCounts.end ; i++) {
+                lines.push("");
+            }
+
+
+            if (options.freezeToJSON) {
+
+                code = code.replace(
+                    new RegExp(REGEXP_ESCAPE('(' + match[1] + ')'), "g"),
+                    JSON.stringify((new Codeblock(
+                        lines.join("\\n").replace(/\\n/g, "___NeWlInE___"),
+                        match[2],
+                        args
+                    )).toString(), null, 4)
+                );
+
+            } else {
+
+                code = code.replace(new RegExp(REGEXP_ESCAPE(match[1]), "g"), [
+                    '___WrApCoDe___("' + match[2] + '", ' + JSON.stringify(args) + ', "',
+                    lines.join("\\n").replace(/"/g, '\\"').replace(/\\n/g, "___NeWlInE___"),
+                    '")'
+                ].join(""));
+            }
+        }
+
+        // Add common functionality to file.
+        if (options.freezeToJSON) {
+            // We do not need to add anything to a frozen JSON file.
+        } else {
+            code = ___WrApCoDe___.toString().replace(/\$\$__filename\$\$/g, __dirname) + ";\n" + code;
+        }
+        code = code.replace(/\\n/g, "\n").replace(/___NeWlInE___/g, "\\n");
+
+
+        // TODO: Make configurable
+        //var compiledPath = LIB.PATH.join(path, "..", ".io/cache.modules", LIB.PATH.basename(path));
+        var purifiedPath = path + "~.pure.js";
+        FS.writeFileSync(purifiedPath, code, "utf8");
+
+        return {
+            sourcePath: path,
+            code: code,
+            purifiedPath: purifiedPath
+        };
+    }
+
+    return {
+        sourcePath: path,
+        code: code
+    };
 }
 
 
@@ -137,7 +275,10 @@ exports.freezeToSource = function (obj) {
 
 exports.thawFromJSON = function (json) {
     const TRAVERSE = require("traverse");
-    return TRAVERSE(JSON.parse(json)).map(function (value) {
+    if (typeof json === "string") {
+        json = JSON.parse(json);
+    }
+    return TRAVERSE(json).map(function (value) {
         if (
             typeof value === "string" &&
             /^\{"\.@":"github\.com~0ink~codeblock\/codeblock:Codeblock"/.test(value)
@@ -167,14 +308,14 @@ exports.compileAll = function (obj) {
     });
 }
 
-exports.runAll = function (obj) {
+exports.runAll = function (obj, options) {
     const TRAVERSE = require("traverse");
     return TRAVERSE(obj).map(function (value) {
         if (
             typeof value === "object" &&
             value instanceof Codeblock
         ) {
-            value = value.run(this.parent.node);
+            value = value.run(this.parent.node, options);
         }
         this.update(value);
     });
@@ -188,106 +329,23 @@ exports.patchGlobalRequire = function () {
     // @see https://github.com/bahmutov/really-need/blob/master/index.js
     var Module = require('module');
 
-    // @see https://github.com/bahmutov/really-need/blob/master/index.js#L142
-    function ___WrApCoDe___ (format, args, _code, uri) {
-        return function WrappedCodeblock (variables) {
-            var code = _code;
-/*
-            var re = /(?:$|\n)(.*?)(%{3}([^%]+)%{3})/g;
-            var match = null;
-            while ( (match = re.exec(code)) ) {
-                var varParts = match[3].split("/");
-                var val = variables;
-                while (varParts.length > 0) {
-                    val = val[varParts.shift()];
-                    if (typeof val === "undefined") {
-                        throw new Error("Variable '" + match[3] + "' not declared while processing code section in file '" + uri + "'!");
-                    }
-                }
-                code = code.replace(new RegExp(REGEXP_ESCAPE(match[2]), "g"), val.split("\n").map(function (line, i) {
-                    if (i > 0) {
-                        line = match[1] + line;
-                    }
-                    return line;
-                }).join("\n"));
-            }
-*/
-            return new (require("$$__filename$$").Codeblock)(code, format, args);
-        };
-    }
     var originalRequire = Module.prototype.require;
     Module.prototype.require = function (uri) {
 
         var path = Module._resolveFilename(uri, this);
         if (FS.existsSync(path)) {
-            var code = FS.readFileSync(path, "utf8");
 
-            code = code.replace(/\n/g, '\\n');
-            var re = /(?:\(|=|,|\?)\s*(([\w\d]+)\s*\(([^\)]*)\)\s+>{3}\s*\\n(.*?)\\n\s*<{3})\s*(?:\\n|\)|;)/g;
+            var purified = exports.purifySync(path);
 
-            if (/>{3}\s*\\n(.*?)\\n\s*<{3}/.test(code)) {
+            if (purified.purifiedPath) {
 
-                var match = null;
-                while ( (match = re.exec(code)) ) {
-
-                    var args = match[3].replace(/\s/g, "");
-                    args = (args !== "") ? args.split(",") : [];
-
-                    var lines = match[4].split("\\n");
-                    var lineCounts = {
-                        start: 0,
-                        end: 0
-                    };
-                    // Strip empty lines from start
-                    while (true) {
-                        if (!/^[\s\t]*$/.test(lines[0])) {
-                            break;
-                        }
-                        lines.shift();
-                        lineCounts.start += 1;
-                    }
-                    // Strip empty lines from end
-                    while (true) {
-                        if (!/^[\s\t]*$/.test(lines[lines.length-1])) {
-                            break;
-                        }
-                        lines.pop();
-                        lineCounts.end += 1;
-                    }
-                    var lineRe = new RegExp("^" + REGEXP_ESCAPE(lines[0].match(/^([\t\s]*)/)[0]));
-                    lines = lines.map(function (line, i) {
-                        return line.replace(lineRe, "");
-                    });
-
-                    for (var i = 0; i < lineCounts.start ; i++) {
-                        lines.unshift("");
-                    }
-                    for (var i = 0; i < lineCounts.end ; i++) {
-                        lines.push("");
-                    }
-
-                    code = code.replace(new RegExp(REGEXP_ESCAPE(match[1]), "g"), [
-                        '___WrApCoDe___("' + match[2] + '", ' + JSON.stringify(args) + ', "',
-                        lines.join("\\n").replace(/"/g, '\\"').replace(/\\n/g, "___NeWlInE___"),
-                        '","' + uri + '")'
-                    ].join(""));
-                }
-                code = ___WrApCoDe___.toString().replace(/\$\$__filename\$\$/g, __dirname) + ";\n" + code.replace(/\\n/g, "\n").replace(/___NeWlInE___/g, "\\n");
-
-
-                // TODO: Make configurable
-                //var compiledPath = LIB.PATH.join(path, "..", ".io/cache.modules", LIB.PATH.basename(path));
-                var compiledPath = path + "~.compiled.js";
-                FS.writeFileSync(compiledPath, code, "utf8");
-
-
-                var mod = new Module(path, this);
+                var mod = new Module(purified.sourcePath, this);
                 mod.parent = this;
-                mod.filename = path;
-                mod.paths = Module._nodeModulePaths(PATH.dirname(path));
+                mod.filename = purified.sourcePath;
+                mod.paths = Module._nodeModulePaths(PATH.dirname(purified.sourcePath));
                 mod.loaded = true;
-                mod._compile(code, path);
-                Module._cache[path] = mod;
+                mod._compile(purified.code, purified.sourcePath);
+                Module._cache[purified.sourcePath] = mod;
                 return mod.exports;
 
                 /*

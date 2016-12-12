@@ -93,7 +93,13 @@ if (process.env.VERBOSE) {
 showDiff(FS.readFileSync(".compiled.js", "utf8"), JSON.stringify(compiled, null, 4));
 
 // Run all codeblocks and verify results
-var result = CODEBLOCK.runAll(compiled);
+var result = CODEBLOCK.runAll(compiled, {
+    sandbox: {
+        console: {
+            log: function () {}
+        }
+    }
+});
 log("result", JSON.stringify(result, null, 4));
 if (process.env.VERBOSE) {
     FS.writeFileSync(".result.js", JSON.stringify(result, null, 4), "utf8");

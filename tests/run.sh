@@ -29,6 +29,8 @@ function init {
             BO_format "$VERBOSE" "FOOTER"
         }
 
+#        runTest "${__BO_DIR__}/03-JavaScript"
+
         for testPath in ${__BO_DIR__}/*/ ; do
             runTest "${testPath}"
         done

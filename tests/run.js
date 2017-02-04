@@ -1,5 +1,7 @@
 
-require("colors");
+const COLORS = require("colors");
+COLORS.enabled = true;
+
 
 const ASSERT = require("assert");
 const PATH = require("path");
@@ -27,7 +29,7 @@ function showDiff (actual, expected) {
     );
     diff.forEach(function(part) {
         var color = part.added ? 'green' : part.removed ? 'red' : 'grey';
-        process.stderr.write(part.value[color]);
+        process.stderr.write(COLORS[color](part.value));
     });
     log("<=== DIFF ===|");
 }
@@ -76,7 +78,12 @@ log("source", source);
 if (source !== FS.readFileSync("main.js", "utf8")) {
     // TODO: Signal fail
 }
-showDiff(FS.readFileSync("main.js", "utf8"), source);
+showDiff(
+    CODEBLOCK.jsonFunctionsToJavaScriptCodeblocks(
+        FS.readFileSync("main.js", "utf8")
+    ),
+    source
+);
 
 
 // Compile all codeblocks for running

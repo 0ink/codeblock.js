@@ -46,7 +46,7 @@ Codeblock.prototype.run = function (variables, options) {
     const VM = require('vm');
     if (!this._compiled) {
         var codeblock = this.compile(variables);
-        return codeblock.run(variables);
+        return codeblock.run(variables, options);
     }
     var script = new VM.Script('RESULT = (function (' + this._args.join(', ') + ') { ' + this._code + ' }).apply(THIS, ARGS);');
     var sandbox = {
@@ -115,16 +115,76 @@ exports.purifySync = function (path, options) {
 
     options = options || {};
 
+    var code = path;
+    if (/^\//.test(code)) {
+        code = FS.readFileSync(path, "utf8");
+    }
+    code = exports.purifyCode(code, options);
+
+    if (code._foundBlocks) {
+
+        // TODO: Make configurable
+        //var compiledPath = LIB.PATH.join(path, "..", ".io/cache.modules", LIB.PATH.basename(path));
+        var purifiedPath = path + "~.pure.js";
+        FS.writeFileSync(purifiedPath, code, "utf8");
+
+        return {
+            sourcePath: path,
+            code: code,
+            purifiedPath: purifiedPath
+        };
+    }
+
+    return {
+        sourcePath: path,
+        code: code
+    };
+}
+
+
+exports.jsonFunctionsToJavaScriptCodeblocks = function (codeIn) {
+
+    // Upgrade ': /*CodeBlock*/ function () {\n}' to ': (javascript () >>>\n<<<)'
+    // TODO: Make this more reliable.
+    var lines = codeIn.split("\n");
+    lines.forEach(function (line, i) {
+        var funcRe = /^(.+:)\s*function\s*\/\*\s*CodeBlock\s*\*\/\s*\(([^\)]*)\)\s*(\{.*)$/ig;
+        var match = null;
+        while ( (match = funcRe.exec(line)) ) {
+            lines[i] = match[1] + " (javascript (" + match[2] + ") >>>";
+            var segment = match[3];
+            var offset = 0;
+            var count = 0;
+            while (true) {
+                count += (segment.match(/\{/g) || []).length;
+                count -= (segment.match(/\}/g) || []).length;
+                if (count === 0) {
+                    lines[i + offset] = lines[i + offset].replace(/\}(\s*,?)/, "<<<)$1");
+                    break;
+                }
+                offset += 1;
+                if (lines.length < (i + offset)) {
+                    throw new Error("No closing bracket found for opening line:", line);
+                }
+                segment = lines[i + offset];
+            }
+        }
+    });
+
+    return lines.join("\n");
+}
+
+exports.purifyCode = function (codeIn, options) {
+
+    options = options || {};
+
     // TODO: Only recompile if need be.
 
-    var code = FS.readFileSync(path, "utf8");
+    var code = exports.jsonFunctionsToJavaScriptCodeblocks(codeIn).replace(/\n/g, "\\n");
 
-    code = code.replace(/\n/g, '\\n');
     var re = /(?:\(|=|,|\?)\s*(([\w\d]+)\s*\(([^\)]*)\)\s+>{3}\s*\\n(.*?)\\n\s*<{3})\s*(?:\\n|\)|;)/g;
 
     if (/>{3}\s*\\n(.*?)\\n\s*<{3}/.test(code)) {
-
-        var match = null;
         while ( (match = re.exec(code)) ) {
 
             var args = match[3].replace(/\s/g, "");
@@ -193,25 +253,15 @@ exports.purifySync = function (path, options) {
         }
         code = code.replace(/\\n/g, "\n").replace(/___NeWlInE___/g, "\\n");
 
+        code = new String(code);
 
-        // TODO: Make configurable
-        //var compiledPath = LIB.PATH.join(path, "..", ".io/cache.modules", LIB.PATH.basename(path));
-        var purifiedPath = path + "~.pure.js";
-        FS.writeFileSync(purifiedPath, code, "utf8");
+        code._foundBlocks = true;
 
-        return {
-            sourcePath: path,
-            code: code,
-            purifiedPath: purifiedPath
-        };
+        return code;
     }
 
-    return {
-        sourcePath: path,
-        code: code
-    };
+    return codeIn;
 }
-
 
 
 exports.freezeToJSON = function (obj) {

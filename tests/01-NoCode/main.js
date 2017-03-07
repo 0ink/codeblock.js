@@ -1,0 +1,6 @@
+
+exports.TEST = {
+    "nocode": (javascript () >>>
+
+    <<<)
+};

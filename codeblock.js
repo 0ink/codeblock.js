@@ -241,10 +241,12 @@ exports.purifyCode = function (codeIn, options) {
                 return (!/^[\s\t]*(#|\/\/)/.test(line));
             });
 
-            var lineRe = new RegExp("^" + REGEXP_ESCAPE(lines[0].match(/^([\t\s]*)/)[0]));
-            lines = lines.map(function (line, i) {
-                return line.replace(lineRe, "");
-            });
+            if (lines[0]) {
+                var lineRe = new RegExp("^" + REGEXP_ESCAPE(lines[0].match(/^([\t\s]*)/)[0]));
+                lines = lines.map(function (line, i) {
+                    return line.replace(lineRe, "");
+                });
+            }
 
             for (var i = 0; i < lineCounts.start ; i++) {
                 lines.unshift("");

@@ -4,5 +4,8 @@ exports.TEST = {
 
         console.log("Hello World");
 
+    <<<),
+    "nocode": (javascript () >>>
+
     <<<)
 };

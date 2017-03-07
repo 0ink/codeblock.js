@@ -1,6 +1,8 @@
 
 const REGEXP_ESCAPE = require("escape-string-regexp");
 const FS = require("fs");
+const ESPRIMA = require("esprima");
+const JSONLINT = require("jsonlint");
 
 
 var Codeblock = exports.Codeblock = function (code, format, args) {
@@ -142,30 +144,53 @@ exports.purifySync = function (path, options) {
 }
 
 
+
+function validateCode (code) {
+    try {
+        var syntax = ESPRIMA.parse(code, {
+            tolerant: true
+        });
+        if (syntax.errors.length) {
+            console.error("code", code);
+            console.error("syntax.errors", syntax.errors);
+            throw new Error("Error parsing JavaScript in Codeblock!");
+        }
+    } catch (err) {
+        console.error("code", code);
+        throw err;
+    }
+}
+
+
 exports.jsonFunctionsToJavaScriptCodeblocks = function (codeIn) {
 
     // Upgrade ': /*CodeBlock*/ function () {\n}' to ': (javascript () >>>\n<<<)'
     // TODO: Make this more reliable.
     var lines = codeIn.split("\n");
     lines.forEach(function (line, i) {
-        var funcRe = /^(.+:)\s*function\s*\/\*\s*CodeBlock\s*\*\/\s*\(([^\)]*)\)\s*(\{.*)$/ig;
+        var funcRe = /^(.+:)\s*function\s*\/\*\s*CodeBlock\s*\*\/\s*\(([^\)]*)\)\s*\{(.*)$/ig;
         var match = null;
         while ( (match = funcRe.exec(line)) ) {
             lines[i] = match[1] + " (javascript (" + match[2] + ") >>>";
             var segment = match[3];
             var offset = 0;
-            var count = 0;
+            var count = 1;
+            var buffer = [];
             while (true) {
                 count += (segment.match(/\{/g) || []).length;
                 count -= (segment.match(/\}/g) || []).length;
                 if (count === 0) {
                     lines[i + offset] = lines[i + offset].replace(/\}(\s*,?)/, "<<<)$1");
+                    buffer.unshift('function JavaScript_in_CodeBlock (' + match[2] + ') {');
+                    buffer.push('}');
+                    validateCode(buffer.join("\n"));
                     break;
                 }
                 offset += 1;
                 if (lines.length < (i + offset)) {
                     throw new Error("No closing bracket found for opening line:", line);
                 }
+                buffer.push(segment);
                 segment = lines[i + offset];
             }
         }
@@ -183,7 +208,6 @@ exports.purifyCode = function (codeIn, options) {
     var code = exports.jsonFunctionsToJavaScriptCodeblocks(codeIn).replace(/\n/g, "\\n");
 
     var re = /(?:\(|=|,|\?)\s*(([\w\d]+)\s*\(([^\)]*)\)\s+>{3}\s*\\n(.*?)\\n\s*<{3})\s*(?:\\n|\)|;)/g;
-
     if (/>{3}\s*\\n(.*?)\\n\s*<{3}/.test(code)) {
         while ( (match = re.exec(code)) ) {
 
@@ -211,6 +235,12 @@ exports.purifyCode = function (codeIn, options) {
                 lines.pop();
                 lineCounts.end += 1;
             }
+
+            // Skip commented out lines starting with '#' or '//'
+            lines = lines.filter(function (line) {
+                return (!/^[\s\t]*(#|\/\/)/.test(line));
+            });
+
             var lineRe = new RegExp("^" + REGEXP_ESCAPE(lines[0].match(/^([\t\s]*)/)[0]));
             lines = lines.map(function (line, i) {
                 return line.replace(lineRe, "");
@@ -252,6 +282,19 @@ exports.purifyCode = function (codeIn, options) {
             code = ___WrApCoDe___.toString().replace(/\$\$__filename\$\$/g, __dirname) + ";\n" + code;
         }
         code = code.replace(/\\n/g, "\n").replace(/___NeWlInE___/g, "\\n");
+
+        if (options.freezeToJSON) {
+            // We validate the JSON to make sure. Some errors do not get caught when
+            // using esprima to validate JavaScript blocks.
+            // TODO: Use https://github.com/trentm/json
+            try {
+                JSON.parse(code);
+            } catch (err) {
+                console.log("codeIn", codeIn);
+                console.error(err.stack);
+                throw new Error("Syntax error in codeblock!");
+            }
+        }
 
         code = new String(code);
 
@@ -326,7 +369,13 @@ exports.freezeToSource = function (obj) {
 exports.thawFromJSON = function (json) {
     const TRAVERSE = require("traverse");
     if (typeof json === "string") {
-        json = JSON.parse(json);
+        try {
+            JSONLINT.parse(json);
+            json = JSON.parse(json);
+        } catch (err) {
+            console.error("json:", json);
+            throw new Error("Error thawing JSON due to JSON syntax error");
+        }
     }
     return TRAVERSE(json).map(function (value) {
         if (
@@ -357,6 +406,18 @@ exports.compileAll = function (obj) {
         this.update(value);
     });
 }
+
+
+exports.run = function (obj, args, options) {
+    if (
+        typeof obj === "object" &&
+        obj instanceof Codeblock
+    ) {
+        return obj.run(args, options);
+    }
+    return obj;
+}
+
 
 exports.runAll = function (obj, options) {
     const TRAVERSE = require("traverse");

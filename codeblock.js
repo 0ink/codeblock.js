@@ -19,9 +19,11 @@ Codeblock.prototype.toString = function () {
 Codeblock.prototype.compile = function (variables) {
     variables = variables || {};
     var code = this._code;
-    var re = /(?:^|\n)(.*?)(%%%([^%]+)%%%)/g;
+    var re = /(?:^|\n)(.*?)(%%%([^%]+)%%%)/;
     var match = null;
-    while ( (match = re.exec(code)) ) {
+    while ( true ) {
+        match = code.match(re);
+        if (!match) break;
         var varParts = match[3].split(".");
         var val = variables;
         while (varParts.length > 0) {

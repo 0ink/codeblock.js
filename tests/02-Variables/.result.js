@@ -1,6 +1,9 @@
 {
     "data": {
-        "message": "Hello World"
+        "message": "Hello World",
+        "prefix": [
+            "Announce:"
+        ]
     },
     "main": "Hello World"
 }

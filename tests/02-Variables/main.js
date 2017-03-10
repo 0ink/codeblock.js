@@ -2,7 +2,9 @@
 exports.TEST = {
     "data": {
         "message": "Hello World",
-        "prefix": "Announce:",
+        "prefix": [
+            "Announce:"
+        ]
     },
     "main": (javascript (data) >>>
 

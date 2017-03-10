@@ -33,7 +33,7 @@ Codeblock.prototype.compile = function (variables) {
                 throw new Error("Variable '" + match[3] + "' not found while processing code section!");
             }
         }
-        code = code.replace(new RegExp(REGEXP_ESCAPE(match[2]), "g"), val.split("\n").map(function (line, i) {
+        code = code.replace(new RegExp(REGEXP_ESCAPE(match[2]), "g"), val.toString().split("\n").map(function (line, i) {
             if (i > 0) {
                 line = match[1] + line;
             }
@@ -207,7 +207,9 @@ exports.purifyCode = function (codeIn, options) {
 
     // TODO: Only recompile if need be.
 
-    var code = exports.jsonFunctionsToJavaScriptCodeblocks(codeIn).replace(/\n/g, "\\n");
+    var preparedCodeIn = codeIn.replace(/\\n/g, "___NeWlInE_KeEp___");
+
+    var code = exports.jsonFunctionsToJavaScriptCodeblocks(preparedCodeIn).replace(/\n/g, "\\n");
 
     var re = /(?:\(|=|,|\?)\s*(([\w\d]+)\s*\(([^\)]*)\)\s+>{3}\s*\\n(.*?)\\n\s*<{3})\s*(?:\\n|\)|;)/g;
     if (/>{3}\s*\\n(.*?)\\n\s*<{3}/.test(code)) {
@@ -257,7 +259,6 @@ exports.purifyCode = function (codeIn, options) {
                 lines.push("");
             }
 
-
             if (options.freezeToJSON) {
 
                 code = code.replace(
@@ -299,6 +300,8 @@ exports.purifyCode = function (codeIn, options) {
                 throw new Error("Syntax error in codeblock!");
             }
         }
+
+        code = code.replace(/___NeWlInE_KeEp___/g, "\\\\n");
 
         code = new String(code);
 

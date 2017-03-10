@@ -1,7 +1,9 @@
 {
     "data": {
         "message": "Hello World",
-        "prefix": "Announce:"
+        "prefix": [
+            "Announce:"
+        ]
     },
     "main": {
         ".@": "github.com~0ink~codeblock/codeblock:Codeblock",

@@ -426,16 +426,28 @@ exports.run = function (obj, args, options) {
 }
 
 
-exports.runAll = function (obj, options) {
+exports.runAll = function (obj, args, options) {
+    if (typeof options === "undefined") {
+        options = args;
+        args = {};
+    }
     const TRAVERSE = require("traverse");
     return TRAVERSE(obj).map(function (value) {
+        var self = this;
         if (
             typeof value === "object" &&
             value instanceof Codeblock
         ) {
-            value = value.run(this.parent.node, options);
+            var ctx = {};
+            Object.keys(self.parent.node).forEach(function (name) {
+                ctx[name] = self.parent.node[name];
+            });
+            Object.keys(args).forEach(function (name) {
+                ctx[name] = args[name];
+            });
+            value = value.run(ctx, options);
         }
-        this.update(value);
+        self.update(value);
     });
 }
 

@@ -242,7 +242,7 @@ exports.purifyCode = function (codeIn, options) {
 
             // Skip commented out lines starting with '#' or '//'
             lines = lines.filter(function (line) {
-                return (!/^[\s\t]*(#|\/\/)/.test(line));
+                return (!/^[\s\t]*(#(?!#)|\/\/)/.test(line));
             });
 
             if (lines[0]) {

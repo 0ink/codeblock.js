@@ -16,6 +16,12 @@ Codeblock.prototype.toString = function () {
     var obj = JSON.stringify(this);
     return JSON.parse(obj);
 }
+Codeblock.prototype.getCode = function () {
+    return this._code;
+}
+Codeblock.prototype.getFormat = function () {
+    return this._format;
+}
 Codeblock.prototype.compile = function (variables) {
     variables = variables || {};
     var code = this._code;
@@ -242,7 +248,11 @@ exports.purifyCode = function (codeIn, options) {
 
             // Skip commented out lines starting with '#' or '//'
             lines = lines.filter(function (line) {
-                return (!/^[\s\t]*(#(?!#)|\/\/)/.test(line));
+                var keep = (!/^[\s\t]*(#(?!#)(?!\!)|\/\/)/.test(line));
+                if (!keep) {
+                    if (process.env.VERBOSE) console.log("Ignore line:", line);
+                }
+                return keep;
             });
 
             if (lines[0]) {
@@ -401,6 +411,23 @@ exports.thawFromJSON = function (json) {
     });
 }
 
+
+exports.compile = function (obj, args) {
+    if (
+        typeof obj === "object" &&
+        obj['.@'] === 'github.com~0ink~codeblock/codeblock:Codeblock'
+    ) {
+        if (typeof obj.compile !== "function") {
+            obj = Codeblock.thaw(obj);
+        }
+        obj = obj.compile(args);
+    } else {
+        throw new Error("'obj' not a codeblock");
+    }
+    return obj;
+}
+
+
 exports.compileAll = function (obj) {
     const TRAVERSE = require("traverse");
     return TRAVERSE(obj).map(function (value) {
@@ -416,6 +443,15 @@ exports.compileAll = function (obj) {
 
 
 exports.run = function (obj, args, options) {
+    if (
+        typeof obj === "object" &&
+        obj['.@'] === 'github.com~0ink~codeblock/codeblock:Codeblock'
+    ) {
+        if (typeof obj.compile !== "function") {
+            obj = Codeblock.thaw(obj);
+        }
+        obj = obj.compile(args);
+    }
     if (
         typeof obj === "object" &&
         obj instanceof Codeblock

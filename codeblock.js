@@ -25,6 +25,21 @@ Codeblock.prototype.getFormat = function () {
 Codeblock.prototype.compile = function (variables) {
     variables = variables || {};
     var code = this._code;
+
+    // Do not compile variables within '(___WrApCoDe___("javascript", ["data"], "' and '", "___WrApCoDe___END")'
+    // Replace segments with placeholders and put back after below.
+    var segments = {};
+    var re = /(\(___WrApCoDe___\("javascript", \[[^\]]*\], ")(.*?)(", "___WrApCoDe___END"\)\))/g;
+    var match = null;
+    while ( (match = re.exec(code)) ) {
+        var segmentKey = '___SeGmEnT___' + Object.keys(segments) + '___';
+        segments[segmentKey] = match[0];
+        code = code.replace(
+            new RegExp(REGEXP_ESCAPE(segments[segmentKey]), "g"),
+            segmentKey
+        );
+    }
+
     var re = /(?:^|\n)(.*?)(%%%([^%]+)%%%)/;
     var match = null;
     while ( true ) {
@@ -46,6 +61,16 @@ Codeblock.prototype.compile = function (variables) {
             return line;
         }).join("\n"));
     }
+
+    // Do not compile variables within '(___WrApCoDe___("javascript", ["data"], "' and '", "___WrApCoDe___END")'
+    // Replace placeholders from above with original code.
+    Object.keys(segments).forEach(function (segmentKey) {
+        code = code.replace(
+            new RegExp(REGEXP_ESCAPE(segmentKey), "g"),
+            segments[segmentKey]
+        );
+    });
+
     var codeblock = new Codeblock(code, this._format, this._args);
     codeblock._compiled = true;
     return codeblock;
@@ -64,7 +89,8 @@ Codeblock.prototype.run = function (variables, options) {
         THIS: options["this"] || null,
         ARGS: this._args.map(function (name) {
             return variables[name];
-        })
+        }),
+        ___WrApCoDe___: ___WrApCoDe___
     };
     if (options.sandbox) {
         Object.keys(options.sandbox).forEach(function (name) {
@@ -112,10 +138,11 @@ exports.require = function (path) {
 }
 
 // @see https://github.com/bahmutov/really-need/blob/master/index.js#L142
+var ___WrApCoDe___WrappedCodeblock___Signature = 'function WrappedCodeblock(variables, Codeblock) {';
 function ___WrApCoDe___ (format, args, _code) {
-    return function WrappedCodeblock (variables) {
+    return function WrappedCodeblock (variables, Codeblock) {
         var code = _code;
-        return new (require("$$__filename$$").Codeblock)(code, format, args);
+        return new (Codeblock || require("$$__filename$$").Codeblock)(code, format, args);
     };
 }
 
@@ -172,13 +199,13 @@ function validateCode (code) {
 
 exports.jsonFunctionsToJavaScriptCodeblocks = function (codeIn) {
 
-    // Upgrade ': /*CodeBlock*/ function () {\n}' to ': (javascript () >>>\n<<<)'
+    // Upgrade ': function /*CodeBlock*/ () {\n}' to ': (javascript () >>>\n<<<)'
     // TODO: Make this more reliable.
     var lines = codeIn.split("\n");
     lines.forEach(function (line, i) {
-        var funcRe = /^(.+:)\s*function\s*\/\*\s*CodeBlock\s*\*\/\s*\(([^\)]*)\)\s*\{(.*)$/ig;
+        var funcRe = /^(.+?)\s*function\s*\/\*\s*CodeBlock\s*\*\/\s*\(([^\)]*)\)\s*\{(.*)$/ig;
         var match = null;
-        while ( (match = funcRe.exec(line)) ) {
+        while ( (match = funcRe.exec(line)) ) {            
             lines[i] = match[1] + " (javascript (" + match[2] + ") >>>";
             var segment = match[3];
             var offset = 0;
@@ -217,14 +244,54 @@ exports.purifyCode = function (codeIn, options) {
 
     var code = exports.jsonFunctionsToJavaScriptCodeblocks(preparedCodeIn).replace(/\n/g, "\\n");
 
-    var re = /(?:\(|=|,|\?)\s*(([\w\d]+)\s*\(([^\)]*)\)\s+>{3}\s*\\n(.*?)\\n\s*<{3})\s*(?:\\n|\)|;)/g;
-    if (/>{3}\s*\\n(.*?)\\n\s*<{3}/.test(code)) {
+    function purifyLayer (code, inSubLayer) {
+
+        // Resolve codeblocks one layer at a time starting with the deepest.
+        var hasMoreLayers = false;
+        var layerSegments = code.split(/(>>>|<<<)/);
+        if (layerSegments.length > 5) {
+            var layerSegmentDepth = {};
+            var currentDepth = 0;
+            var maxDepth = 0;
+            layerSegments.forEach(function (segment, i) {
+                if (segment === '>>>') {
+                    currentDepth += 1;
+                    maxDepth = Math.max(maxDepth, currentDepth);
+                }
+                layerSegmentDepth[i] = currentDepth;
+                if (segment === '<<<') {
+                    currentDepth -= 1;
+                }
+            });
+            hasMoreLayers = true;
+            code = layerSegments.map(function (segment, i) {
+                if (layerSegmentDepth[i] < maxDepth) {
+                    if (segment === '>>>') {
+                        return '#>#>#>';
+                    } else
+                    if (segment === '<<<') {
+                        return '<#<#<#';
+                    }
+                }
+                return segment;
+            }).join("");
+        }
+
+        var re = /(?:\(|=|,|\?)\s*(([\w\d]+)\s*\(([^\)]*)\)\s+>{3}\s*\\n(.*?)\\n\s*<{3})\s*(?:\\n|\)|;)/g;
+
+        var matchedSegments = [];
+
         while ( (match = re.exec(code)) ) {
+            matchedSegments.push(match);
+        }
+
+        matchedSegments.forEach(function (match) {
 
             var args = match[3].replace(/\s/g, "");
             args = (args !== "") ? args.split(",") : [];
 
             var lines = match[4].split("\\n");
+
             var lineCounts = {
                 start: 0,
                 end: 0
@@ -271,23 +338,70 @@ exports.purifyCode = function (codeIn, options) {
 
             if (options.freezeToJSON) {
 
+                var replacement = (new Codeblock(
+                    lines.join("\\n").replace(/\\n/g, "___NeWlInE___"),
+                    match[2],
+                    args
+                )).toString();
+
                 code = code.replace(
                     new RegExp(REGEXP_ESCAPE('(' + match[1] + ')'), "g"),
-                    JSON.stringify((new Codeblock(
-                        lines.join("\\n").replace(/\\n/g, "___NeWlInE___"),
-                        match[2],
-                        args
-                    )).toString(), null, 4)
+                    (
+                        hasMoreLayers ?
+                            JSON.stringify(replacement)
+                            :
+                            JSON.stringify(replacement, null, 4)
+                    )
                 );
 
             } else {
 
+                lines = lines.map(function (line) {
+                    // Escape '(___WrApCoDe___("javascript", ["data"], "' and '", "___WrApCoDe___END")'
+                    var re = /(\(___WrApCoDe___\("javascript", \[[^\]]*\], ")(.*?)(", "___WrApCoDe___END"\)\))/g;
+                    var match = null;
+                    while ( (match = re.exec(line)) ) {
+                        line = line.replace(
+                            new RegExp(REGEXP_ESCAPE(match[0]), "g"),
+                            [
+                                match[1],
+                                match[2]
+                                    .replace(/___NeWlInE_KeEp___/g, '___NeWlInE_KeEp_Escaped___')
+                                    .replace(/___NeWlInE___/g, '___NeWlInE_Escaped___'),
+                                match[3]
+                            ].join("")
+                        );
+                    }
+                    return line;
+                });
+
                 code = code.replace(new RegExp(REGEXP_ESCAPE(match[1]), "g"), [
                     '___WrApCoDe___("' + match[2] + '", ' + JSON.stringify(args) + ', "',
-                    lines.join("\\n").replace(/"/g, '\\"').replace(/\\n/g, "___NeWlInE___"),
-                    '")'
+                    lines.join("\\n")
+                        .replace(/"/g, '\\"')
+                        .replace(/\\n/g, "___NeWlInE___"),
+                    '", "___WrApCoDe___END")'
                 ].join(""));
             }
+        });
+
+        if (hasMoreLayers) {
+            code = purifyLayer(
+                code
+                    .replace(/#>#>#>/g, '>>>')
+                    .replace(/<#<#<#/g, '<<<'),
+                true
+            );
+        }
+
+        if (inSubLayer) {
+            if (!hasMoreLayers) {
+
+                code = code.replace(/\\{3}"/g, '__QUOTE_PRE3__');
+
+                code = code.replace(/\\{2}/g, "\\\\\\");
+            }
+            return code;
         }
 
         // Add common functionality to file.
@@ -296,7 +410,9 @@ exports.purifyCode = function (codeIn, options) {
         } else {
             code = ___WrApCoDe___.toString().replace(/\$\$__filename\$\$/g, __dirname) + ";\n" + code;
         }
-        code = code.replace(/\\n/g, "\n").replace(/___NeWlInE___/g, "\\n");
+        code = code.replace(/\\n/g, "\n");
+        code = code.replace(/___NeWlInE___/g, "\\n");
+        code = code.replace(/___NeWlInE_Escaped___/g, "\\\\n");
 
         if (options.freezeToJSON) {
             // We validate the JSON to make sure. Some errors do not get caught when
@@ -306,12 +422,15 @@ exports.purifyCode = function (codeIn, options) {
                 JSON.parse(code);
             } catch (err) {
                 console.log("codeIn", codeIn);
+                console.log("code", code);
                 console.error(err.stack);
                 throw new Error("Syntax error in codeblock!");
             }
         }
 
         code = code.replace(/___NeWlInE_KeEp___/g, "\\\\n");
+        code = code.replace(/___NeWlInE_KeEp_Escaped___/g, "\\\\\\n");
+        code = code.replace(/__QUOTE_PRE3__/g, '\\\\\\"');
 
         code = new String(code);
 
@@ -320,6 +439,9 @@ exports.purifyCode = function (codeIn, options) {
         return code;
     }
 
+    if (/>{3}\s*\\n(.*?)\\n\s*<{3}/.test(code)) {
+        return purifyLayer(code);
+    }
     return codeIn;
 }
 
@@ -355,28 +477,41 @@ exports.freezeToSource = function (obj) {
         }
         this.update(value);
     }), null, 4);
-
-
     var re = /(?:$|\n)(\s*)(.*?)("___BlOcK___(\d+)___")/g;
     var match = null;
     while ( (match = re.exec(source)) ) {
         var indent = "";
         for (var i=0;i<match[1].length;i++) indent += " ";
-
         var codeblock = blocks[parseInt(match[4])];
-
         var code = [
             "(" + codeblock._format + " (" + codeblock._args.join(", ") + ") >>>"
         ];
-        code = code.concat(codeblock._code.split("\n").map(function (line, i) {
+        var rawCode = codeblock._code;
+
+        // Convert '(___WrApCoDe___("javascript", [...], " ... "___WrApCoDe___END")' back to '... >>> ... <<<'
+        var re = /\(___WrApCoDe___\("javascript", \[([^\]]*)\], "(.*?)", "___WrApCoDe___END"\)\)/g;
+        var match2 = null;
+        while ( (match2 = re.exec(rawCode)) ) {
+            rawCode = rawCode.replace(
+                new RegExp(REGEXP_ESCAPE(match2[0]), "g"),
+                [
+                    "(javascript (" + match2[1].replace(/"/g, "") + ") >>>",
+                    match2[2].split(/\\n/).map(function (line) {
+                        return ("    " + line);
+                    }).join("\n"),
+                    "<<<)"
+                ].join("\n")
+            );
+        }
+
+        code = code.concat(rawCode.split("\n").map(function (line, i) {
             return ("    " + line);
         }));
         code = code.concat("<<<)");
-        code = code.map(function (line, i) {
+        code = code.map(function (line, i) {            
             if (i === 0) return line;
             return (indent + line);
         }).join("\n");
-
         source = source.replace(new RegExp(REGEXP_ESCAPE(match[3]), "g"), code);
     }
 
@@ -444,6 +579,12 @@ exports.compileAll = function (obj) {
 
 exports.run = function (obj, args, options) {
     if (
+        typeof obj === "function" &&
+        obj.toString().split("\n")[0] === ___WrApCoDe___WrappedCodeblock___Signature
+    ) {
+        obj = obj(args, exports.Codeblock);
+    }
+    if (
         typeof obj === "object" &&
         obj['.@'] === 'github.com~0ink~codeblock/codeblock:Codeblock'
     ) {
@@ -468,20 +609,29 @@ exports.runAll = function (obj, args, options) {
         args = {};
     }
     const TRAVERSE = require("traverse");
+    function makeContext (self) {
+        var ctx = {};
+        Object.keys(self.parent.node).forEach(function (name) {
+            ctx[name] = self.parent.node[name];
+        });
+        Object.keys(args).forEach(function (name) {
+            ctx[name] = args[name];
+        });
+        return ctx;
+    }
     return TRAVERSE(obj).map(function (value) {
         var self = this;
+        if (
+            typeof value === "function" &&
+            value.toString().split("\n")[0] === ___WrApCoDe___WrappedCodeblock___Signature
+        ) {
+            value = value(makeContext(self), exports.Codeblock);
+        }
         if (
             typeof value === "object" &&
             value instanceof Codeblock
         ) {
-            var ctx = {};
-            Object.keys(self.parent.node).forEach(function (name) {
-                ctx[name] = self.parent.node[name];
-            });
-            Object.keys(args).forEach(function (name) {
-                ctx[name] = args[name];
-            });
-            value = value.run(ctx, options);
+            value = value.run(makeContext(self), options);
         }
         self.update(value);
     });

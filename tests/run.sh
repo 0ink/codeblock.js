@@ -30,6 +30,8 @@ function init {
         }
 
 #        runTest "${__BO_DIR__}/03-JavaScript"
+#        runTest "${__BO_DIR__}/04-Nested"
+#exit 0
 
         for testPath in ${__BO_DIR__}/*/ ; do
             runTest "${testPath}"

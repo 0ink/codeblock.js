@@ -40,26 +40,46 @@ Codeblock.prototype.compile = function (variables) {
         );
     }
 
-    var re = /(?:^|\n)(.*?)(%%%([^%]+)%%%)/;
+    var re = /(?:^|\n)(.*?)(["']?)(%%%([^%]+)%%%)(["']?)/;
     var match = null;
     while ( true ) {
         match = code.match(re);
         if (!match) break;
-        var varParts = match[3].split(".");
+        var varParts = match[4].split(".");
         var val = variables;
         while (varParts.length > 0) {
             val = val[varParts.shift()];
             if (typeof val === "undefined") {
                 console.error("variables", variables);
-                throw new Error("Variable '" + match[3] + "' not found while processing code section!");
+                throw new Error("Variable '" + match[4] + "' not found while processing code section!");
             }
         }
-        code = code.replace(new RegExp(REGEXP_ESCAPE(match[2]), "g"), val.toString().split("\n").map(function (line, i) {
+        val = val.toString().split("\n").map(function (line, i) {
             if (i > 0) {
                 line = match[1] + line;
             }
             return line;
-        }).join("\n"));
+        }).join("\n");
+
+        if (match[2] === "'" && match[5] === "'") {
+            val = val.replace(/'/g, "\\'");
+console.log("replace 1");
+        } else
+        if (match[2] === '"' && match[5] === '"') {
+            val = val.replace(/"/g, "\\\"");
+console.log("replace 2");
+        }
+
+console.log("match", match);
+console.log("val", val);
+
+        code = code.replace(new RegExp(REGEXP_ESCAPE(match[3]), "g"), val);
+
+console.log("CODE >>>>>>");
+
+process.stdout.write(code + "\n");
+
+console.log("<<<<< CODE");
     }
 
     // Do not compile variables within '(___WrApCoDe___("javascript", ["data"], "' and '", "___WrApCoDe___END")'

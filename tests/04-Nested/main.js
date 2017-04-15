@@ -4,7 +4,8 @@ exports.TEST = {
         "message": {
             "part1": "Hello",
             "part2": "World"
-        }
+        },
+        "chars": "`-=[]\\;',./~_+{}|:\"<>"
     },
     "main": function /*CodeBlock*/ (data) {
 
@@ -18,7 +19,20 @@ exports.TEST = {
             console.log('Sub:', '%%%data.message%%%');
             console.log('Sub:', data.message);
 
-            return data.message;
+            console.log('Sub:', '%%%data.chars%%%');
+            console.log('Sub:', "%%%data.chars%%%");
+            console.log('Sub:', data.chars);
+            console.log('Sub:', "`-=[]\\;',./~_+{}|:\"<>");
+            console.log('Sub:', '`-=[]\\;\',./~_+{}|:"<>');
+
+            return {
+                m1: data.message,
+                c1: '%%%data.chars%%%',
+                c2: "%%%data.chars%%%",
+                c3: "`-=[]\\;',./~_+{}|:\"<>",
+                c4: '`-=[]\\;\',./~_+{}|:"<>',
+                c5: data.chars
+            };
         }
 
         console.log("impl", impl);
@@ -28,7 +42,8 @@ exports.TEST = {
                 message: [
                     data.message.part1,
                     data.message.part2
-                ].join(" ")
+                ].join(" "),
+                chars: data.chars
             }
         }, {
             sandbox: {

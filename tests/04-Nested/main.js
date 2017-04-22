@@ -11,19 +11,31 @@ exports.TEST = {
 
         const CODEBLOCK = require("../..");
 
-        console.log("%%%data.message.part1%%% %%%data.message.part2%%%");
-        console.log(JSON.stringify(data.message));
+        console.log("m1", "%%%data.message.part1%%% %%%data.message.part2%%%");
+        console.log("m1", JSON.stringify(data.message));
 
         var impl = function /*CodeBlock*/ (data) {
 
-            console.log('Sub:', '%%%data.message%%%');
-            console.log('Sub:', data.message);
+            console.log('s1:', '%%%data.message%%%');
+            console.log('s2:', data.message);
 
-            console.log('Sub:', '%%%data.chars%%%');
-            console.log('Sub:', "%%%data.chars%%%");
-            console.log('Sub:', data.chars);
-            console.log('Sub:', "`-=[]\\;',./~_+{}|:\"<>");
-            console.log('Sub:', '`-=[]\\;\',./~_+{}|:"<>');
+            console.log('s3:', '%%%data.chars%%%');
+            console.log('s4:', "%%%data.chars%%%");
+            console.log('s5:', data.chars);
+            console.log('s6:', "`-=[]\\;',./~_+{}|:\"<>");
+            console.log('s7:', '`-=[]\\;\',./~_+{}|:"<>');
+
+            if ("%%%data.chars%%%" !== "`-=[]\\;',./~_+{}|:\"<>") {
+                throw new Error("data.chars [1] mis-match");
+            }
+
+            if ('%%%data.chars%%%' !== "`-=[]\\;',./~_+{}|:\"<>") {
+                throw new Error("data.chars [2] mis-match");
+            }
+
+            if (data.chars !== "`-=[]\\;',./~_+{}|:\"<>") {
+                throw new Error("data.chars [3] mis-match");
+            }
 
             return {
                 m1: data.message,

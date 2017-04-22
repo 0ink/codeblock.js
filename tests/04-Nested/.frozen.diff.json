@@ -1,0 +1,584 @@
+[
+    {
+        "count": 117,
+        "value": "\nexports.TEST = {\n    \"data\": {\n        \"message\": {\n            \"part1\": \"Hello\",\n            \"part2\": \"World\"\n        },\n        \"chars\": \"`-=[]\\\\;',./~_+{}|:\\\"<>\"\n    },\n    \"main\": (javascript (data) >>>\n\n        const CODEBLOCK = require(\"../..\");\n\n        console.log(\"m1\", \"%%%data.message.part1%%% %%%data.message.part2%%%\");\n        console.log(\"m1\", JSON.stringify(data.message));\n\n        var impl = ("
+    },
+    {
+        "count": 2,
+        "removed": true,
+        "value": "___WrApCoDe___(\""
+    },
+    {
+        "count": 1,
+        "value": "javascript"
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "\","
+    },
+    {
+        "count": 1,
+        "value": " "
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "[\""
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "("
+    },
+    {
+        "count": 1,
+        "value": "data"
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "\"],"
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": ")"
+    },
+    {
+        "count": 1,
+        "value": " "
+    },
+    {
+        "count": 2,
+        "removed": true,
+        "value": "\"\\nconsole"
+    },
+    {
+        "count": 3,
+        "added": true,
+        "value": ">>>\n\n            console"
+    },
+    {
+        "count": 10,
+        "value": ".log('s1:', '%%%data.message"
+    },
+    {
+        "count": 2,
+        "removed": true,
+        "value": "%%%');\\nconsole"
+    },
+    {
+        "count": 3,
+        "added": true,
+        "value": "%%%');\n            console"
+    },
+    {
+        "count": 9,
+        "value": ".log('s2:', data.message"
+    },
+    {
+        "count": 4,
+        "removed": true,
+        "value": ");\\n\\nconsole"
+    },
+    {
+        "count": 3,
+        "added": true,
+        "value": ");\n\n            console"
+    },
+    {
+        "count": 10,
+        "value": ".log('s3:', '%%%data.chars"
+    },
+    {
+        "count": 2,
+        "removed": true,
+        "value": "%%%');\\nconsole"
+    },
+    {
+        "count": 3,
+        "added": true,
+        "value": "%%%');\n            console"
+    },
+    {
+        "count": 6,
+        "value": ".log('s4:', "
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "\\\"%%%"
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "\"%%%"
+    },
+    {
+        "count": 3,
+        "value": "data.chars"
+    },
+    {
+        "count": 2,
+        "removed": true,
+        "value": "%%%\\\");\\nconsole"
+    },
+    {
+        "count": 3,
+        "added": true,
+        "value": "%%%\");\n            console"
+    },
+    {
+        "count": 9,
+        "value": ".log('s5:', data.chars"
+    },
+    {
+        "count": 2,
+        "removed": true,
+        "value": ");\\nconsole"
+    },
+    {
+        "count": 3,
+        "added": true,
+        "value": ");\n            console"
+    },
+    {
+        "count": 6,
+        "value": ".log('s6:', "
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "\\\"`-=[]\\\\\\\\;',./~"
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "\"`-=[]\\\\;',./~"
+    },
+    {
+        "count": 1,
+        "value": "_"
+    },
+    {
+        "count": 2,
+        "removed": true,
+        "value": "+{}|:\\\\\\\"<>\\\");\\nconsole"
+    },
+    {
+        "count": 3,
+        "added": true,
+        "value": "+{}|:\\\"<>\");\n            console"
+    },
+    {
+        "count": 6,
+        "value": ".log('s7:', "
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "'`-=[]\\\\\\\\;\\\\',./~"
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "'`-=[]\\\\;\\',./~"
+    },
+    {
+        "count": 1,
+        "value": "_"
+    },
+    {
+        "count": 4,
+        "removed": true,
+        "value": "+{}|:\\\"<>');\\n\\nif"
+    },
+    {
+        "count": 3,
+        "added": true,
+        "value": "+{}|:\"<>');\n\n            if"
+    },
+    {
+        "count": 1,
+        "value": " "
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "(\\\"%%%"
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "(\"%%%"
+    },
+    {
+        "count": 3,
+        "value": "data.chars"
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "%%%\\\""
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "%%%\""
+    },
+    {
+        "count": 3,
+        "value": " !== "
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "\\\"`-=[]\\\\\\\\;',./~"
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "\"`-=[]\\\\;',./~"
+    },
+    {
+        "count": 1,
+        "value": "_"
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "+{}|:\\\\\\\"<>\\\")"
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "+{}|:\\\"<>\")"
+    },
+    {
+        "count": 1,
+        "value": " "
+    },
+    {
+        "count": 3,
+        "removed": true,
+        "value": "{\\n    "
+    },
+    {
+        "count": 2,
+        "added": true,
+        "value": "{\n                "
+    },
+    {
+        "count": 5,
+        "value": "throw new Error"
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "(\\\""
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "(\""
+    },
+    {
+        "count": 11,
+        "value": "data.chars [1] mis-match"
+    },
+    {
+        "count": 6,
+        "removed": true,
+        "value": "\\\");\\n}\\n\\nif"
+    },
+    {
+        "count": 5,
+        "added": true,
+        "value": "\");\n            }\n\n            if"
+    },
+    {
+        "count": 9,
+        "value": " ('%%%data.chars%%%' !== "
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "\\\"`-=[]\\\\\\\\;',./~"
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "\"`-=[]\\\\;',./~"
+    },
+    {
+        "count": 1,
+        "value": "_"
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "+{}|:\\\\\\\"<>\\\")"
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "+{}|:\\\"<>\")"
+    },
+    {
+        "count": 1,
+        "value": " "
+    },
+    {
+        "count": 3,
+        "removed": true,
+        "value": "{\\n    "
+    },
+    {
+        "count": 2,
+        "added": true,
+        "value": "{\n                "
+    },
+    {
+        "count": 5,
+        "value": "throw new Error"
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "(\\\""
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "(\""
+    },
+    {
+        "count": 11,
+        "value": "data.chars [2] mis-match"
+    },
+    {
+        "count": 6,
+        "removed": true,
+        "value": "\\\");\\n}\\n\\nif"
+    },
+    {
+        "count": 5,
+        "added": true,
+        "value": "\");\n            }\n\n            if"
+    },
+    {
+        "count": 8,
+        "value": " (data.chars !== "
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "\\\"`-=[]\\\\\\\\;',./~"
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "\"`-=[]\\\\;',./~"
+    },
+    {
+        "count": 1,
+        "value": "_"
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "+{}|:\\\\\\\"<>\\\")"
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "+{}|:\\\"<>\")"
+    },
+    {
+        "count": 1,
+        "value": " "
+    },
+    {
+        "count": 3,
+        "removed": true,
+        "value": "{\\n    "
+    },
+    {
+        "count": 2,
+        "added": true,
+        "value": "{\n                "
+    },
+    {
+        "count": 5,
+        "value": "throw new Error"
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "(\\\""
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "(\""
+    },
+    {
+        "count": 11,
+        "value": "data.chars [3] mis-match"
+    },
+    {
+        "count": 6,
+        "removed": true,
+        "value": "\\\");\\n}\\n\\nreturn"
+    },
+    {
+        "count": 5,
+        "added": true,
+        "value": "\");\n            }\n\n            return"
+    },
+    {
+        "count": 1,
+        "value": " "
+    },
+    {
+        "count": 3,
+        "removed": true,
+        "value": "{\\n    "
+    },
+    {
+        "count": 2,
+        "added": true,
+        "value": "{\n                "
+    },
+    {
+        "count": 6,
+        "value": "m1: data.message"
+    },
+    {
+        "count": 3,
+        "removed": true,
+        "value": ",\\n    "
+    },
+    {
+        "count": 2,
+        "added": true,
+        "value": ",\n                "
+    },
+    {
+        "count": 7,
+        "value": "c1: '%%%data.chars"
+    },
+    {
+        "count": 3,
+        "removed": true,
+        "value": "%%%',\\n    "
+    },
+    {
+        "count": 2,
+        "added": true,
+        "value": "%%%',\n                "
+    },
+    {
+        "count": 3,
+        "value": "c2: "
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "\\\"%%%"
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "\"%%%"
+    },
+    {
+        "count": 3,
+        "value": "data.chars"
+    },
+    {
+        "count": 3,
+        "removed": true,
+        "value": "%%%\\\",\\n    "
+    },
+    {
+        "count": 2,
+        "added": true,
+        "value": "%%%\",\n                "
+    },
+    {
+        "count": 3,
+        "value": "c3: "
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "\\\"`-=[]\\\\\\\\;',./~"
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "\"`-=[]\\\\;',./~"
+    },
+    {
+        "count": 1,
+        "value": "_"
+    },
+    {
+        "count": 3,
+        "removed": true,
+        "value": "+{}|:\\\\\\\"<>\\\",\\n    "
+    },
+    {
+        "count": 2,
+        "added": true,
+        "value": "+{}|:\\\"<>\",\n                "
+    },
+    {
+        "count": 3,
+        "value": "c4: "
+    },
+    {
+        "count": 1,
+        "removed": true,
+        "value": "'`-=[]\\\\\\\\;\\\\',./~"
+    },
+    {
+        "count": 1,
+        "added": true,
+        "value": "'`-=[]\\\\;\\',./~"
+    },
+    {
+        "count": 1,
+        "value": "_"
+    },
+    {
+        "count": 3,
+        "removed": true,
+        "value": "+{}|:\\\"<>',\\n    "
+    },
+    {
+        "count": 2,
+        "added": true,
+        "value": "+{}|:\"<>',\n                "
+    },
+    {
+        "count": 6,
+        "value": "c5: data.chars"
+    },
+    {
+        "count": 7,
+        "removed": true,
+        "value": "\\n};\", \"___WrApCoDe___END\"))"
+    },
+    {
+        "count": 4,
+        "added": true,
+        "value": "\n            };\n        <<<)"
+    },
+    {
+        "count": 101,
+        "value": "\n\n        console.log(\"impl\", impl);\n\n        var result = CODEBLOCK.run(impl, {\n            data: {\n                message: [\n                    data.message.part1,\n                    data.message.part2\n                ].join(\" \"),\n                chars: data.chars\n            }\n        }, {\n            sandbox: {\n                console: console\n            }\n        });\n\n        console.log(\"result\", result);\n\n        return result;\n    <<<)\n};\n"
+    }
+]

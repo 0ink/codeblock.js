@@ -1,6 +1,7 @@
 {
     "data": {
-        "message": "Hello World"
+        "message": "Hello World",
+        "chars": "`-=[]\\;',./~_+{}|:\"<>"
     },
     "main": "Hello World"
 }

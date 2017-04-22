@@ -4,6 +4,8 @@ const FS = require("fs");
 const ESPRIMA = require("esprima");
 const JSONLINT = require("jsonlint");
 
+const DEBUG = process.env.DEBUG || false;
+
 
 var Codeblock = exports.Codeblock = function (code, format, args) {
     this[".@"] = "github.com~0ink~codeblock/codeblock:Codeblock";
@@ -17,7 +19,7 @@ Codeblock.prototype.toString = function () {
     return JSON.parse(obj);
 }
 Codeblock.prototype.getCode = function () {
-    return this._code;
+    return linesForEscapedNewline(this._code).join("\n");
 }
 Codeblock.prototype.getFormat = function () {
     return this._format;
@@ -61,25 +63,16 @@ Codeblock.prototype.compile = function (variables) {
             return line;
         }).join("\n");
 
+        var searchString = match[3];
         if (match[2] === "'" && match[5] === "'") {
-            val = val.replace(/'/g, "\\'");
-console.log("replace 1");
+            val = "'" + val.replace(/\\/g, "\\\\").replace(/'/g, "\\'") + "'";
+            searchString = "'" + searchString + "'";
         } else
         if (match[2] === '"' && match[5] === '"') {
-            val = val.replace(/"/g, "\\\"");
-console.log("replace 2");
+            val = '"' + val.replace(/\\/g, "\\\\").replace(/"/g, "\\\"") + '"';
+            searchString = '"' + searchString + '"';
         }
-
-console.log("match", match);
-console.log("val", val);
-
-        code = code.replace(new RegExp(REGEXP_ESCAPE(match[3]), "g"), val);
-
-console.log("CODE >>>>>>");
-
-process.stdout.write(code + "\n");
-
-console.log("<<<<< CODE");
+        code = code.replace(new RegExp(REGEXP_ESCAPE(searchString), "g"), val);
     }
 
     // Do not compile variables within '(___WrApCoDe___("javascript", ["data"], "' and '", "___WrApCoDe___END")'
@@ -103,7 +96,8 @@ Codeblock.prototype.run = function (variables, options) {
         var codeblock = this.compile(variables);
         return codeblock.run(variables, options);
     }
-    var script = new VM.Script('RESULT = (function (' + this._args.join(', ') + ') { ' + this._code + ' }).apply(THIS, ARGS);');
+    var code = this.getCode();
+    var script = new VM.Script('RESULT = (function (' + this._args.join(', ') + ') { ' + code + ' }).apply(THIS, ARGS);');
     var sandbox = {
         console: console,
         THIS: options["this"] || null,
@@ -157,12 +151,46 @@ exports.require = function (path) {
     return require(purified.sourcePath);
 }
 
+
+
+function linesForEscapedNewline (rawCode) {
+    var lines = [];
+    var segments = rawCode.split(/([\\]*\\n)/);
+    for (var i=0; i<segments.length ; i++) {
+        if (i % 2 === 0) {
+            lines.push(segments[i]);
+        } else
+        if (segments[i] !== "\\n") {
+            lines[lines.length - 1] += segments[i].replace(/\\\\/g, "\\") + segments[i + 1];
+            i++;
+        }
+    }
+    return lines;
+}
+
+
 // @see https://github.com/bahmutov/really-need/blob/master/index.js#L142
 var ___WrApCoDe___WrappedCodeblock___Signature = 'function WrappedCodeblock(variables, Codeblock) {';
 function ___WrApCoDe___ (format, args, _code) {
     return function WrappedCodeblock (variables, Codeblock) {
         var code = _code;
-        return new (Codeblock || require("$$__filename$$").Codeblock)(code, format, args);
+        function linesForEscapedNewline (rawCode) {
+            var lines = [];
+            var segments = rawCode.split(/([\\]*\\n)/);
+            for (var i=0; i<segments.length ; i++) {
+                if (i % 2 === 0) {
+                    lines.push(segments[i]);
+                } else
+                if (segments[i] !== "\n") {
+                    lines[lines.length - 1] += segments[i] + segments[i + 1];
+                    i++;
+                }
+            }
+            return lines;
+        }
+        var cleanedCode = linesForEscapedNewline(code);
+        cleanedCode = cleanedCode.join("\n");
+        return new (Codeblock || require("$$__filename$$").Codeblock)(cleanedCode, format, args);
     };
 }
 
@@ -201,12 +229,14 @@ exports.purifySync = function (path, options) {
 
 
 function validateCode (code) {
+    if (DEBUG) console.log("validateCode >>>>".yellow);
+    if (DEBUG) process.stdout.write(code + "\n");
+    if (DEBUG) console.log("<<<< validateCode".yellow);
     try {
         var syntax = ESPRIMA.parse(code, {
             tolerant: true
         });
         if (syntax.errors.length) {
-            console.error("code", code);
             console.error("syntax.errors", syntax.errors);
             throw new Error("Error parsing JavaScript in Codeblock!");
         }
@@ -219,50 +249,102 @@ function validateCode (code) {
 
 exports.jsonFunctionsToJavaScriptCodeblocks = function (codeIn) {
 
+    if (DEBUG) console.log("jsonFunctionsToJavaScriptCodeblocks IN >>>>".yellow);
+    if (DEBUG) process.stdout.write(codeIn + "\n");
+    if (DEBUG) console.log("<<<< jsonFunctionsToJavaScriptCodeblocks IN".yellow);
+
     // Upgrade ': function /*CodeBlock*/ () {\n}' to ': (javascript () >>>\n<<<)'
     // TODO: Make this more reliable.
     var lines = codeIn.split("\n");
-    lines.forEach(function (line, i) {
-        var funcRe = /^(.+?)\s*function\s*\/\*\s*CodeBlock\s*\*\/\s*\(([^\)]*)\)\s*\{(.*)$/ig;
-        var match = null;
-        while ( (match = funcRe.exec(line)) ) {            
-            lines[i] = match[1] + " (javascript (" + match[2] + ") >>>";
-            var segment = match[3];
-            var offset = 0;
-            var count = 1;
-            var buffer = [];
-            while (true) {
-                count += (segment.match(/\{/g) || []).length;
-                count -= (segment.match(/\}/g) || []).length;
-                if (count === 0) {
-                    lines[i + offset] = lines[i + offset].replace(/\}(\s*,?)/, "<<<)$1");
-                    buffer.unshift('function JavaScript_in_CodeBlock (' + match[2] + ') {');
-                    buffer.push('}');
-                    validateCode(buffer.join("\n"));
-                    break;
-                }
-                offset += 1;
-                if (lines.length < (i + offset)) {
-                    throw new Error("No closing bracket found for opening line:", line);
-                }
-                buffer.push(segment);
-                segment = lines[i + offset];
-            }
-        }
-    });
 
-    return lines.join("\n");
+    // Replace all matches starting with the last one until none are left
+
+    function iterate () {
+
+        var matches = [];
+
+        // Detect matches
+        lines.forEach(function (line, i) {
+            var funcRe = /^(.+?)\s*function\s*\/\*\s*CodeBlock\s*\*\/\s*\(([^\)]*)\)\s*\{(.*)$/ig;
+            var match = null;
+            while ( (match = funcRe.exec(line)) ) {
+                matches.push(i);
+            }
+        });
+
+        if (matches.length === 0) {
+            return;
+        }
+
+        var lastMatch = matches.pop();
+
+        lines.forEach(function (line, i) {
+            var funcRe = /^(.+?)\s*function\s*\/\*\s*CodeBlock\s*\*\/\s*\(([^\)]*)\)\s*\{(.*)$/ig;
+            var match = null;
+            if (i === lastMatch) {
+                while ( (match = funcRe.exec(line)) ) {
+                    lines[i] = match[1] + " (javascript (" + match[2] + ") >>>";
+                    var segment = match[3];
+                    var offset = 0;
+                    var count = 1;
+                    var buffer = [];
+                    while (true) {
+                        count += (segment.match(/\{/g) || []).length;
+                        count -= (segment.match(/\}/g) || []).length;
+                        if (count === 0) {
+                            lines[i + offset] = lines[i + offset].replace(/\}(\s*,?)/, "<<<)$1");
+                            // TODO: Fix indent.
+                            buffer.unshift('function JavaScript_in_CodeBlock (' + match[2] + ') {');
+                            buffer.push('}');
+                            var rawJSCode = buffer.join("\n");
+                            var purifiedJSCode = exports.purifyCode(rawJSCode).toString();
+                            validateCode(purifiedJSCode);
+                            break;
+                        }
+                        offset += 1;
+                        if (lines.length < (i + offset)) {
+                            throw new Error("No closing bracket found for opening line:", line);
+                        }
+                        buffer.push(segment);
+                        segment = lines[i + offset];
+                    }
+                }
+            }
+        });
+
+        if (matches.length > 0) {
+            iterate();
+        }
+    }
+
+    iterate();
+
+    var codeOut = lines.join("\n");
+
+    if (DEBUG) console.log("jsonFunctionsToJavaScriptCodeblocks OUT >>>>".yellow);
+    if (DEBUG) process.stdout.write(codeOut + "\n");
+    if (DEBUG) console.log("<<<< jsonFunctionsToJavaScriptCodeblocks OUT".yellow);
+
+    return codeOut;
 }
 
 exports.purifyCode = function (codeIn, options) {
+
+    if (DEBUG) console.log("PURIFY CODE >>>>".yellow);
+    if (DEBUG) process.stdout.write(codeIn + "\n");
+    if (DEBUG) console.log("<<<< PURIFY CODE".yellow);
 
     options = options || {};
 
     // TODO: Only recompile if need be.
 
-    var preparedCodeIn = codeIn.replace(/\\n/g, "___NeWlInE_KeEp___");
+    var preparedCodeIn = codeIn.replace(/\\n/g, "___NeWlInE_KeEp_OrIgInAl___");
 
     var code = exports.jsonFunctionsToJavaScriptCodeblocks(preparedCodeIn).replace(/\n/g, "\\n");
+
+    if (DEBUG) console.log("code >>>>".yellow);
+    if (DEBUG) process.stdout.write(code + "\n");
+    if (DEBUG) console.log("<<<< code".yellow);
 
     function purifyLayer (code, inSubLayer) {
 
@@ -306,6 +388,10 @@ exports.purifyCode = function (codeIn, options) {
         }
 
         matchedSegments.forEach(function (match) {
+
+            if (DEBUG) console.log("match >>>>".yellow);
+            if (DEBUG) console.log(match);
+            if (DEBUG) console.log("<<<< match".yellow);
 
             var args = match[3].replace(/\s/g, "");
             args = (args !== "") ? args.split(",") : [];
@@ -356,6 +442,11 @@ exports.purifyCode = function (codeIn, options) {
                 lines.push("");
             }
 
+            if (DEBUG) console.log("lines >>>>".yellow);
+            if (DEBUG) process.stdout.write(lines.join("\n") + "\n");
+            if (DEBUG) console.log("<<<< lines".yellow);
+            if (DEBUG) console.log("options".yellow, options);
+
             if (options.freezeToJSON) {
 
                 var replacement = (new Codeblock(
@@ -375,7 +466,7 @@ exports.purifyCode = function (codeIn, options) {
                 );
 
             } else {
-
+/*
                 lines = lines.map(function (line) {
                     // Escape '(___WrApCoDe___("javascript", ["data"], "' and '", "___WrApCoDe___END")'
                     var re = /(\(___WrApCoDe___\("javascript", \[[^\]]*\], ")(.*?)(", "___WrApCoDe___END"\)\))/g;
@@ -394,14 +485,26 @@ exports.purifyCode = function (codeIn, options) {
                     }
                     return line;
                 });
+*/
 
-                code = code.replace(new RegExp(REGEXP_ESCAPE(match[1]), "g"), [
+                var replacement = [
                     '___WrApCoDe___("' + match[2] + '", ' + JSON.stringify(args) + ', "',
                     lines.join("\\n")
+                        .replace(/\\/g, '\\\\')
                         .replace(/"/g, '\\"')
-                        .replace(/\\n/g, "___NeWlInE___"),
+                        .replace(/___NeWlInE_KeEp_OrIgInAl___/g, "\\\\\\\\n"),
+//                        .replace(/\\n/g, "___NeWlInE___"),
                     '", "___WrApCoDe___END")'
-                ].join(""));
+                ].join("");
+
+                if (DEBUG) console.log("replace >>>>".yellow);
+                if (DEBUG) process.stdout.write(match[1] + "\n");
+                if (DEBUG) console.log("<<<< replace".yellow);
+                if (DEBUG) console.log("replacement >>>>".yellow);
+                if (DEBUG) process.stdout.write(replacement + "\n");
+                if (DEBUG) console.log("<<<< replacement".yellow);
+
+                code = code.replace(new RegExp(REGEXP_ESCAPE(match[1]), "g"), replacement);
             }
         });
 
@@ -417,22 +520,30 @@ exports.purifyCode = function (codeIn, options) {
         if (inSubLayer) {
             if (!hasMoreLayers) {
 
-                code = code.replace(/\\{3}"/g, '__QUOTE_PRE3__');
-
-                code = code.replace(/\\{2}/g, "\\\\\\");
+//                code = code.replace(/\\{3}"/g, '__QUOTE_PRE3__');
+//                code = code.replace(/\\{2}/g, "\\\\\\");
             }
             return code;
         }
+
+        // NOTE: We run this multiple times to ensure all CONSEQUTIVE newlines are replaced.
+        // TODO: Tweak regexp to replace consequtive newlines in one replacement.
+        code = code.replace(/([^\\]|^)\\n/g, "$1\n");
+        code = code.replace(/([^\\]|^)\\n/g, "$1\n");
+        code = code.replace(/([^\\]|^)\\n/g, "$1\n");
+        code = code.replace(/([^\\]|^)\\n/g, "$1\n");
 
         // Add common functionality to file.
         if (options.freezeToJSON) {
             // We do not need to add anything to a frozen JSON file.
         } else {
+//            code = ___WrApCoDe___.toString().replace(/\\/g, "\\\\").replace(/\$\$__filename\$\$/g, __dirname) + ";\n" + code;
             code = ___WrApCoDe___.toString().replace(/\$\$__filename\$\$/g, __dirname) + ";\n" + code;
         }
-        code = code.replace(/\\n/g, "\n");
-        code = code.replace(/___NeWlInE___/g, "\\n");
-        code = code.replace(/___NeWlInE_Escaped___/g, "\\\\n");
+
+
+//        code = code.replace(/___NeWlInE___/g, "\\n");
+//        code = code.replace(/___NeWlInE_Escaped___/g, "\\\\n");
 
         if (options.freezeToJSON) {
             // We validate the JSON to make sure. Some errors do not get caught when
@@ -448,19 +559,25 @@ exports.purifyCode = function (codeIn, options) {
             }
         }
 
-        code = code.replace(/___NeWlInE_KeEp___/g, "\\\\n");
-        code = code.replace(/___NeWlInE_KeEp_Escaped___/g, "\\\\\\n");
-        code = code.replace(/__QUOTE_PRE3__/g, '\\\\\\"');
-
-        code = new String(code);
-
-        code._foundBlocks = true;
+//        code = code.replace(/___NeWlInE_KeEp___/g, "\\\\n");
+//        code = code.replace(/___NeWlInE_KeEp_Escaped___/g, "\\\\\\n");
+//        code = code.replace(/__QUOTE_PRE3__/g, '\\\\\\"');
 
         return code;
     }
 
     if (/>{3}\s*\\n(.*?)\\n\s*<{3}/.test(code)) {
-        return purifyLayer(code);
+        var codeOut = purifyLayer(code);
+
+        codeOut = codeOut.replace(/___NeWlInE_KeEp_OrIgInAl___/g, "\\n");
+
+        if (DEBUG) console.log("PURIFIED CODE >>>>".yellow);
+        if (DEBUG) process.stdout.write(codeOut + "\n");
+        if (DEBUG) console.log("<<<< PURIFIED CODE".yellow);
+
+        codeOut = new String(codeOut);
+        codeOut._foundBlocks = true;
+        return codeOut;
     }
     return codeIn;
 }
@@ -508,6 +625,11 @@ exports.freezeToSource = function (obj) {
         ];
         var rawCode = codeblock._code;
 
+        if (DEBUG) console.log("rawCode >>>>".yellow);
+        if (DEBUG) process.stdout.write(rawCode + "\n");
+        if (DEBUG) console.log("<<<< rawCode".yellow);
+
+/*
         // Convert '(___WrApCoDe___("javascript", [...], " ... "___WrApCoDe___END")' back to '... >>> ... <<<'
         var re = /\(___WrApCoDe___\("javascript", \[([^\]]*)\], "(.*?)", "___WrApCoDe___END"\)\)/g;
         var match2 = null;
@@ -523,8 +645,12 @@ exports.freezeToSource = function (obj) {
                 ].join("\n")
             );
         }
+*/
 
-        code = code.concat(rawCode.split("\n").map(function (line, i) {
+
+        var lines = linesForEscapedNewline(rawCode);
+
+        code = code.concat(lines.map(function (line, i) {
             return ("    " + line);
         }));
         code = code.concat("<<<)");
@@ -532,7 +658,16 @@ exports.freezeToSource = function (obj) {
             if (i === 0) return line;
             return (indent + line);
         }).join("\n");
+
+        if (DEBUG) console.log("code >>>>".yellow);
+        if (DEBUG) process.stdout.write(code + "\n");
+        if (DEBUG) console.log("<<<< code".yellow);
+
         source = source.replace(new RegExp(REGEXP_ESCAPE(match[3]), "g"), code);
+
+        if (DEBUG) console.log("source >>>>".yellow);
+        if (DEBUG) process.stdout.write(source + "\n");
+        if (DEBUG) console.log("<<<< source".yellow);
     }
 
     return source;
@@ -657,6 +792,18 @@ exports.runAll = function (obj, args, options) {
     });
 }
 
+
+var originalRequire = null;
+
+exports.unpatchGlobalRequire = function () {
+    if (!originalRequire) {
+        throw new Error("Global require not patched");
+    }
+    var Module = require('module');
+    Module.prototype.require = originalRequire;
+    originalRequire = null;
+}
+
 exports.patchGlobalRequire = function () {
 
     const PATH = require("path");
@@ -665,7 +812,7 @@ exports.patchGlobalRequire = function () {
     // @see https://github.com/bahmutov/really-need/blob/master/index.js
     var Module = require('module');
 
-    var originalRequire = Module.prototype.require;
+    originalRequire = Module.prototype.require;
     Module.prototype.require = function (uri) {
 
         var path = Module._resolveFilename(uri, this);
@@ -674,6 +821,10 @@ exports.patchGlobalRequire = function () {
             var purified = exports.purifySync(path);
 
             if (purified.purifiedPath) {
+
+                if (DEBUG) console.log("RUN CODE >>>>".yellow);
+                if (DEBUG) process.stdout.write(purified.code + "\n");
+                if (DEBUG) console.log("<<<< RUN CODE".yellow);
 
                 var mod = new Module(purified.sourcePath, this);
                 mod.parent = this;

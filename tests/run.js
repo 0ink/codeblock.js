@@ -12,6 +12,8 @@ const RESOLVE = require("resolve");
 const CODEBLOCK = require("../codeblock");
 
 
+// NOTE: Run with '--verbose' to record test results.
+
 function log () {
     if (!process.env.VERBOSE) {
         return;
@@ -22,7 +24,7 @@ function log () {
     console.log.apply(console, args);
 }
 
-function showDiff (actual, expected, label) {
+function showDiff (actual, expected, label, diffFile) {
     if (actual === expected) return;
     // @see https://github.com/kpdecker/jsdiff
     var diff = DIFF.diffWordsWithSpace(
@@ -50,6 +52,33 @@ function showDiff (actual, expected, label) {
         return;
     }
 */
+
+    if (diffFile) {
+        if (process.env.VERBOSE) {
+            if (FS.existsSync(diffFile)) {
+                FS.unlinkSync(diffFile);
+            }
+            FS.writeFileSync(diffFile, JSON.stringify(diff, null, 4), "utf8");
+        } else
+        if (FS.existsSync(diffFile)) {
+
+            var diff2 = DIFF.diffJson(
+                JSON.parse(FS.readFileSync(diffFile, "utf8")),
+                diff
+            );
+            var equal = true;
+            diff2.forEach(function(part) {
+                if (part.added || part.removed) {
+                    equal = false;
+                }
+            });
+            if (equal) {
+                // The diff is the same so we are all good.
+                return;
+            }
+        }
+    }
+
     log((label + " |=== DIFF ===>").red);
     diff.forEach(function(part) {
         var color = part.added ? 'green' : part.removed ? 'red' : 'grey';
@@ -63,13 +92,12 @@ function showDiff (actual, expected, label) {
 // Parse codeblocks in required JavaScript modules
 CODEBLOCK.patchGlobalRequire();
 
-
-
 // Load JavaScript Source using NodeJS 'require' overlay
 const TEST = require(PATH.resolve("main.js")).TEST;
-log('OBJ:'.cyan, UTIL.inspect(TEST, { showHidden: true, depth: null }));
-log("OBJ:".cyan, JSON.stringify(TEST, null, 4));
+log('OBJ loaded inspect:'.cyan, UTIL.inspect(TEST, { showHidden: true, depth: null }));
+log("OBJ loaded stringify:".cyan, JSON.stringify(TEST, null, 4));
 
+CODEBLOCK.unpatchGlobalRequire();
 
 
 // Freeze from JavaScript Object to JSON
@@ -80,8 +108,8 @@ log("FROZEN:".cyan, JSON.stringify(JSON.parse(frozen), null, 4));
 
 // Thaw from JSON to JavaScript Object again
 var obj = CODEBLOCK.thawFromJSON(frozen);
-log('OBJ:'.cyan, UTIL.inspect(obj, { showHidden: true, depth: null }));
-log("OBJ:".cyan, JSON.stringify(obj, null, 4));
+log('OBJ thawed inspect:'.cyan, UTIL.inspect(obj, { showHidden: true, depth: null }));
+log("OBJ thawed stringify:".cyan, JSON.stringify(obj, null, 4));
 
 
 
@@ -115,7 +143,8 @@ showDiff(
         FS.readFileSync("main.js", "utf8")
     ),
     source,
-    'SOURCE'
+    'SOURCE',
+    '.frozen.diff.json'
 );
 
 

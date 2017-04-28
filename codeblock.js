@@ -117,6 +117,9 @@ Codeblock.prototype.run = function (variables, options) {
 Codeblock.thaw = function (ice) {
     if (typeof ice === "string") {
         ice = JSON.parse(ice);
+    } else {
+        // Copy string
+        ice = JSON.parse(JSON.stringify(ice));
     }
     var code = ice.this;
     delete ice.this;
@@ -450,7 +453,7 @@ exports.purifyCode = function (codeIn, options) {
             if (options.freezeToJSON) {
 
                 var replacement = (new Codeblock(
-                    lines.join("\\n").replace(/\\n/g, "___NeWlInE___"),
+                    lines.join("\\n"),//.replace(/\\n/g, "___NeWlInE___"),
                     match[2],
                     args
                 )).toString();
@@ -601,81 +604,105 @@ exports.freezeToJSON = function (obj) {
     }));
 }
 
-exports.freezeToSource = function (obj) {
+exports.freezeToSource = function (obj, options) {
+    options = options || {};
     const TRAVERSE = require("traverse");
-    var blocks = [];
-    var source = JSON.stringify(TRAVERSE(obj).map(function (value) {
+    var segments = [];
+    var source = TRAVERSE(obj).map(function (value) {
         if (
             typeof value === "object" &&
             value['.@'] === 'github.com~0ink~codeblock/codeblock:Codeblock'
         ) {
-            blocks.push(value);
-            value = "___BlOcK___" + (blocks.length - 1) + "___";
+            var codeblock = value;
+            segments.push(function (indent) {
+                var code = [
+                    "(" + codeblock._format + " (" + codeblock._args.join(", ") + ") >>>"
+                ];
+                var rawCode = codeblock._code;
+
+                if (DEBUG) console.log("rawCode >>>>".yellow);
+                if (DEBUG) process.stdout.write(rawCode + "\n");
+                if (DEBUG) console.log("<<<< rawCode".yellow);
+
+                /*
+                        // Convert '(___WrApCoDe___("javascript", [...], " ... "___WrApCoDe___END")' back to '... >>> ... <<<'
+                        var re = /\(___WrApCoDe___\("javascript", \[([^\]]*)\], "(.*?)", "___WrApCoDe___END"\)\)/g;
+                        var match2 = null;
+                        while ( (match2 = re.exec(rawCode)) ) {
+                            rawCode = rawCode.replace(
+                                new RegExp(REGEXP_ESCAPE(match2[0]), "g"),
+                                [
+                                    "(javascript (" + match2[1].replace(/"/g, "") + ") >>>",
+                                    match2[2].split(/\\n/).map(function (line) {
+                                        return ("    " + line);
+                                    }).join("\n"),
+                                    "<<<)"
+                                ].join("\n")
+                            );
+                        }
+                */
+
+                var lines = linesForEscapedNewline(rawCode);
+
+                code = code.concat(lines.map(function (line, i) {
+                    return ("    " + line);
+                }));
+                code = code.concat("<<<)");
+                code = code.map(function (line, i) {            
+                    if (i === 0) return line;
+                    return (indent + line);
+                }).join("\n");
+
+                return code;
+            });
+            value = "___BlOcK___" + (segments.length - 1) + "___";
+        } else
+        if (typeof value === "function") {
+            var func = value.toString().replace(/^(function\s)/, "$1/* CodeBlock */ ");
+            if (options.oneline) {
+                func = func.replace(/\n/g, " ");
+            }
+            segments.push(function (indent) {
+                return func;
+            });
+            value = "___BlOcK___" + (segments.length - 1) + "___";
         }
         this.update(value);
-    }), null, 4);
-    var re = /(?:$|\n)(\s*)(.*?)("___BlOcK___(\d+)___")/g;
+    });
+    if (options.oneline) {
+        source = JSON.stringify(source);    
+    } else {
+        source = JSON.stringify(source, null, 4);    
+    }
+    var re = null;
+    var replacer = null;
+    var segmentMatchIndex = null;
+    var replaceMatchIndex = null;
+    if (options.oneline) {
+        re = /("___BlOcK___(\d+)___")/g;
+        segmentMatchIndex = 2;
+        replaceMatchIndex = 1;
+    } else {
+        re = /(?:$|\n)(\s*)(.*?)("___BlOcK___(\d+)___")/g;
+        segmentMatchIndex = 4;
+        replaceMatchIndex = 3;
+    }
     var match = null;
     while ( (match = re.exec(source)) ) {
         var indent = "";
         for (var i=0;i<match[1].length;i++) indent += " ";
-        var codeblock = blocks[parseInt(match[4])];
-        var code = [
-            "(" + codeblock._format + " (" + codeblock._args.join(", ") + ") >>>"
-        ];
-        var rawCode = codeblock._code;
-
-        if (DEBUG) console.log("rawCode >>>>".yellow);
-        if (DEBUG) process.stdout.write(rawCode + "\n");
-        if (DEBUG) console.log("<<<< rawCode".yellow);
-
-/*
-        // Convert '(___WrApCoDe___("javascript", [...], " ... "___WrApCoDe___END")' back to '... >>> ... <<<'
-        var re = /\(___WrApCoDe___\("javascript", \[([^\]]*)\], "(.*?)", "___WrApCoDe___END"\)\)/g;
-        var match2 = null;
-        while ( (match2 = re.exec(rawCode)) ) {
-            rawCode = rawCode.replace(
-                new RegExp(REGEXP_ESCAPE(match2[0]), "g"),
-                [
-                    "(javascript (" + match2[1].replace(/"/g, "") + ") >>>",
-                    match2[2].split(/\\n/).map(function (line) {
-                        return ("    " + line);
-                    }).join("\n"),
-                    "<<<)"
-                ].join("\n")
-            );
-        }
-*/
-
-
-        var lines = linesForEscapedNewline(rawCode);
-
-        code = code.concat(lines.map(function (line, i) {
-            return ("    " + line);
-        }));
-        code = code.concat("<<<)");
-        code = code.map(function (line, i) {            
-            if (i === 0) return line;
-            return (indent + line);
-        }).join("\n");
-
-        if (DEBUG) console.log("code >>>>".yellow);
-        if (DEBUG) process.stdout.write(code + "\n");
-        if (DEBUG) console.log("<<<< code".yellow);
-
-        source = source.replace(new RegExp(REGEXP_ESCAPE(match[3]), "g"), code);
-
-        if (DEBUG) console.log("source >>>>".yellow);
-        if (DEBUG) process.stdout.write(source + "\n");
-        if (DEBUG) console.log("<<<< source".yellow);
+        var code = segments[parseInt(match[segmentMatchIndex])](indent);
+        source = source.replace(new RegExp(REGEXP_ESCAPE(match[replaceMatchIndex]), "g"), code);
     }
-
     return source;
 }
 
 exports.thawFromJSON = function (json) {
     const TRAVERSE = require("traverse");
     if (typeof json === "string") {
+        if (DEBUG) console.error("thawFromJSON >>>>");
+        if (DEBUG) process.stderr.write(json + "\n");
+        if (DEBUG) console.error("<<<< thawFromJSON");
         try {
             JSONLINT.parse(json);
             json = JSON.parse(json);

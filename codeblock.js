@@ -168,6 +168,9 @@ function linesForEscapedNewline (rawCode) {
             i++;
         }
     }
+    lines = lines.map(function (line) {
+        return line.replace(/\\\n/g, "\\n");        
+    });
     return lines;
 }
 

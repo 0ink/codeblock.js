@@ -30,6 +30,7 @@ function init {
         }
 
 #        runTest "${__BO_DIR__}/01-Basic"
+#        runTest "${__BO_DIR__}/02-Variables"
 #        runTest "${__BO_DIR__}/03-JavaScript"
 #        runTest "${__BO_DIR__}/04-Nested"
 #exit 0

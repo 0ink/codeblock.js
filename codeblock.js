@@ -26,7 +26,7 @@ Codeblock.prototype.getFormat = function () {
 }
 Codeblock.prototype.compile = function (variables) {
     variables = variables || {};
-    var code = this._code;
+    var code = this.getCode();
 
     // Do not compile variables within '(___WrApCoDe___("javascript", ["data"], "' and '", "___WrApCoDe___END")'
     // Replace segments with placeholders and put back after below.
@@ -41,7 +41,6 @@ Codeblock.prototype.compile = function (variables) {
             segmentKey
         );
     }
-
     var re = /(?:^|\n)(.*?)(["']?)(%%%([^%]+)%%%)(["']?)/;
     var match = null;
     while ( true ) {
@@ -84,6 +83,9 @@ Codeblock.prototype.compile = function (variables) {
         );
     });
 
+    code = code.replace(/\\n/g, "\\\\n");
+    code = code.replace(/\n/g, "\\n");
+
     var codeblock = new Codeblock(code, this._format, this._args);
     codeblock._compiled = true;
     return codeblock;
@@ -97,7 +99,13 @@ Codeblock.prototype.run = function (variables, options) {
         return codeblock.run(variables, options);
     }
     var code = this.getCode();
-    var script = new VM.Script('RESULT = (function (' + this._args.join(', ') + ') { ' + code + ' }).apply(THIS, ARGS);');
+    try {
+        var script = new VM.Script('RESULT = (function (' + this._args.join(', ') + ') { ' + code + ' }).apply(THIS, ARGS);');
+    } catch (err) {
+        console.log("this._code", this._code);
+        console.log("code", code);
+        throw err;
+    }
     var sandbox = {
         console: console,
         THIS: options["this"] || null,
@@ -456,7 +464,9 @@ exports.purifyCode = function (codeIn, options) {
             if (options.freezeToJSON) {
 
                 var replacement = (new Codeblock(
-                    lines.join("\\n"),//.replace(/\\n/g, "___NeWlInE___"),
+                    lines
+                        .join("\\n")
+                        .replace(/(___NeWlInE_KeEp_OrIgInAl___)/g, "\\$1"), //.replace(/\\n/g, "___NeWlInE___"),
                     match[2],
                     args
                 )).toString();

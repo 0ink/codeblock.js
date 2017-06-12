@@ -6,6 +6,8 @@ exports.TEST = {
     },
     "main": function /*CodeBlock*/ (data) {
 
+        console.log("m0", ["foo", "bar"].join("\n"));
+
         console.log("m1", ["%%%data.message%%%"].join("\n"));
         console.log("m2", ["%%%data.message%%%"].join("\\n"));
         console.log("m3", data.message);

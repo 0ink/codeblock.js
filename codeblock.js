@@ -4,7 +4,7 @@ const FS = require("fs");
 const ESPRIMA = require("esprima");
 const JSONLINT = require("jsonlint");
 
-const DEBUG = process.env.DEBUG || false;
+const DEBUG = /(^|\s)codeblock(\s|$)/.test(process.env.DEBUG || "") || false;
 
 
 var Codeblock = exports.Codeblock = function (code, format, args) {
@@ -99,6 +99,11 @@ Codeblock.prototype.run = function (variables, options) {
         return codeblock.run(variables, options);
     }
     var code = this.getCode();
+    if (DEBUG) {
+        console.log("[codeblock] variables:", Object.keys(variables));
+        console.log("[codeblock] options:", Object.keys(options));
+        console.log("[codeblock] Code to execute in VM", code);
+    }
     try {
         var script = new VM.Script('RESULT = (function (' + this._args.join(', ') + ') { ' + code + ' }).apply(THIS, ARGS);');
     } catch (err) {
@@ -820,15 +825,15 @@ exports.runAll = function (obj, args, options) {
             typeof value === "function" &&
             value.toString().split("\n")[0] === ___WrApCoDe___WrappedCodeblock___Signature
         ) {
-            value = value(makeContext(self), exports.Codeblock);
+            self.update(value(makeContext(self), exports.Codeblock));
         }
         if (
             typeof value === "object" &&
-            value instanceof Codeblock
+            value instanceof Codeblock &&
+            value.getFormat() === "javascript"
         ) {
-            value = value.run(makeContext(self), options);
+            self.update(value.run(makeContext(self), options));
         }
-        self.update(value);
     });
 }
 

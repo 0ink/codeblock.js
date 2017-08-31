@@ -9,7 +9,21 @@ const DEBUG = /(^|\s)codeblock(\s|$)/.test(process.env.DEBUG || "") || false;
 
 var Codeblock = exports.Codeblock = function (code, format, args) {
     this[".@"] = "github.com~0ink~codeblock/codeblock:Codeblock";
-    this._code = code;
+    if (
+        typeof code === "object" &&
+        code.hasOwnProperty("raw") &&
+        Object.keys(code).length === 1
+    ) {
+        this._code = code.raw;
+    } else {
+        if (code) {
+            this._code = code.replace(/\\n/g, "___NeWlInE_KeEp_OrIgInAl___")
+                .replace(/\n/g, "\\n")
+                .replace(/(___NeWlInE_KeEp_OrIgInAl___)/g, "\\$1");
+        } else {
+            this._code = code;
+        }
+    }
     this._format = format;
     this._args = args;
     this._compiled = false;
@@ -86,7 +100,7 @@ Codeblock.prototype.compile = function (variables) {
     code = code.replace(/\\n/g, "\\\\n");
     code = code.replace(/\n/g, "\\n");
 
-    var codeblock = new Codeblock(code, this._format, this._args);
+    var codeblock = new Codeblock({raw: code}, this._format, this._args);
     codeblock._compiled = true;
     return codeblock;
 }
@@ -105,7 +119,13 @@ Codeblock.prototype.run = function (variables, options) {
         console.log("[codeblock] Code to execute in VM", code);
     }
     try {
-        var script = new VM.Script('RESULT = (function (' + this._args.join(', ') + ') { ' + code + ' }).apply(THIS, ARGS);');
+        var script = new VM.Script([
+            'RESULT = (function (',
+            this._args.join(', '),
+            ') { ',
+            code.replace(/&#96;/g, "\`"),
+            ' }).apply(THIS, ARGS);'
+        ].join(""));
     } catch (err) {
         console.log("this._code", this._code);
         console.log("code", code);
@@ -140,7 +160,7 @@ Codeblock.thaw = function (ice) {
     delete ice._format;
     var args = ice._args;
     delete ice._args;
-    var inst = new Codeblock(code, format, args);
+    var inst = new Codeblock({raw: code}, format, args);
     Object.keys(ice).forEach(function (key) {
         inst[key] = ice[key];
     });
@@ -209,7 +229,7 @@ function ___WrApCoDe___ (format, args, _code) {
         }
         var cleanedCode = linesForEscapedNewline(code);
         cleanedCode = cleanedCode.join("\n");
-        return new (Codeblock || require("$$__filename$$").Codeblock)(cleanedCode, format, args);
+        return new (Codeblock || require("$$__filename$$").Codeblock)({raw: cleanedCode}, format, args);
     };
 }
 
@@ -469,9 +489,11 @@ exports.purifyCode = function (codeIn, options) {
             if (options.freezeToJSON) {
 
                 var replacement = (new Codeblock(
-                    lines
-                        .join("\\n")
-                        .replace(/(___NeWlInE_KeEp_OrIgInAl___)/g, "\\$1"), //.replace(/\\n/g, "___NeWlInE___"),
+                    {
+                        raw: lines
+                            .join("\\n")
+                            .replace(/(___NeWlInE_KeEp_OrIgInAl___)/g, "\\$1"), //.replace(/\\n/g, "___NeWlInE___")
+                    },
                     match[2],
                     args
                 )).toString();

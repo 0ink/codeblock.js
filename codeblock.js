@@ -17,11 +17,9 @@ var Codeblock = exports.Codeblock = function (code, format, args) {
         this._code = code.raw;
     } else {
         if (code) {
-            this._code = code.replace(/\\n/g, "___NeWlInE_KeEp_OrIgInAl___")
-                .replace(/\n/g, "\\n")
-                .replace(/(___NeWlInE_KeEp_OrIgInAl___)/g, "\\$1");
+            this.setCode(code);
         } else {
-            this._code = code;
+            this._code = "";
         }
     }
     this._format = format;
@@ -30,10 +28,16 @@ var Codeblock = exports.Codeblock = function (code, format, args) {
 }
 Codeblock.prototype.toString = function () {
     var obj = JSON.stringify(this);
+    // TODO: We should probably be returning a string instead of an object here?
     return JSON.parse(obj);
 }
 Codeblock.prototype.getCode = function () {
     return linesForEscapedNewline(this._code).join("\n");
+}
+Codeblock.prototype.setCode = function (code) {
+    this._code = code.replace(/\\n/g, "___NeWlInE_KeEp_OrIgInAl___")
+        .replace(/\n/g, "\\n")
+        .replace(/(___NeWlInE_KeEp_OrIgInAl___)/g, "\\$1");
 }
 Codeblock.prototype.getFormat = function () {
     return this._format;
@@ -375,7 +379,22 @@ exports.purifyCode = function (codeIn, options) {
 
     options = options || {};
 
-    // TODO: Only recompile if need be.
+    function notifyOnCodeblock (codeblock) {
+        if (
+            !options.on ||
+            !options.on.codeblock
+        ) {
+            return;
+        }
+        try {
+            return options.on.codeblock(codeblock);
+        } catch (err) {
+            console.error("Error while running 'on.codeblock':", err);
+            throw err;
+        }
+    }
+
+    // TODO: Only recompile if need be. Need to keep cache in memory and on disk.
 
     var preparedCodeIn = codeIn.replace(/\\n/g, "___NeWlInE_KeEp_OrIgInAl___");
 
@@ -488,7 +507,7 @@ exports.purifyCode = function (codeIn, options) {
 
             if (options.freezeToJSON) {
 
-                var replacement = (new Codeblock(
+                var replacement = new Codeblock(
                     {
                         raw: lines
                             .join("\\n")
@@ -496,7 +515,14 @@ exports.purifyCode = function (codeIn, options) {
                     },
                     match[2],
                     args
-                )).toString();
+                );
+
+                var ret = notifyOnCodeblock(replacement);
+                if (typeof ret !== "undefined") {
+                    replacement = ret;
+                }
+
+                replacement = replacement.toString();
 
                 code = code.replace(
                     new RegExp(REGEXP_ESCAPE('(' + match[1] + ')'), "g"),
@@ -539,6 +565,15 @@ exports.purifyCode = function (codeIn, options) {
 //                        .replace(/\\n/g, "___NeWlInE___"),
                     '", "___WrApCoDe___END")'
                 ].join("");
+
+                if (
+                    options.on &&
+                    options.on.codeblock
+                ) {
+                    throw new Error("Implement 'on.codeblock' for !freezeToJSON");
+                    // TODO: Convert 'replacement' to proper Codeblock, notify, and then convert back.
+                    //notifyOnCodeblock(replacement);
+                }
 
                 if (DEBUG) console.log("replace >>>>".yellow);
                 if (DEBUG) process.stdout.write(match[1] + "\n");

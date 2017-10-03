@@ -49,7 +49,7 @@ describe('Suite', function() {
                         ASSERT.deepEqual(codeblock.toString(), {
                             ".@": "github.com~0ink~codeblock/codeblock:Codeblock",
                             "_code": "\\nHello World 2\\n",
-                            "_format": "text",
+                            "_format": "text:plain",
                             "_args": [],
                             "_compiled": false
                         });
@@ -86,7 +86,7 @@ describe('Suite', function() {
             "block2": {
                 ".@": "github.com~0ink~codeblock/codeblock:Codeblock",
                 "_code": "\\nHello World 2!\\n",
-                "_format": "text",
+                "_format": "text:plain",
                 "_args": [],
                 "_compiled": false
             }

@@ -437,7 +437,7 @@ exports.purifyCode = function (codeIn, options) {
             }).join("");
         }
 
-        var re = /(?:\(|=|,|\?)\s*(([\w\d\.]+)\s*\(([^\)]*)\)\s+>{3}\s*\\n(.*?)\\n\s*<{3})\s*(?:\\n|\)|;)/g;
+        var re = /(?:\(|=|,|\?)\s*(([\w\d\.:]+)\s*\(([^\)]*)\)\s+>{3}\s*\\n(.*?)\\n\s*<{3})\s*(?:\\n|\)|;)/g;
 
         var matchedSegments = [];
 

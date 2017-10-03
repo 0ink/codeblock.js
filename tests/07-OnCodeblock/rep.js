@@ -4,7 +4,7 @@
         return "Hello World 1";
 
     <<<),
-    "block2": (text () >>>
+    "block2": (text:plain () >>>
 
         Hello World 2
 

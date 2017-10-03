@@ -2,3 +2,5 @@
 *~.*
 /tests/.run.bash.log
 /.installed.*
+.actual.*
+.rt/

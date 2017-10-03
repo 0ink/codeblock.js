@@ -418,7 +418,7 @@ exports.purifyCode = function (codeIn, options) {
             }).join("");
         }
 
-        var re = /(?:\(|=|,|\?)\s*(([\w\d]+)\s*\(([^\)]*)\)\s+>{3}\s*\\n(.*?)\\n\s*<{3})\s*(?:\\n|\)|;)/g;
+        var re = /(?:\(|=|,|\?)\s*(([\w\d\.]+)\s*\(([^\)]*)\)\s+>{3}\s*\\n(.*?)\\n\s*<{3})\s*(?:\\n|\)|;)/g;
 
         var matchedSegments = [];
 
@@ -588,7 +588,10 @@ exports.purifyCode = function (codeIn, options) {
 //        code = code.replace(/___NeWlInE___/g, "\\n");
 //        code = code.replace(/___NeWlInE_Escaped___/g, "\\\\n");
 
-        if (options.freezeToJSON) {
+        if (
+            options.freezeToJSON &&
+            !options.skipFrozenJSONVerify
+        ) {
             // We validate the JSON to make sure. Some errors do not get caught when
             // using esprima to validate JavaScript blocks.
             // TODO: Use https://github.com/trentm/json

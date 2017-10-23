@@ -378,6 +378,9 @@ exports.purifyCode = function (codeIn, options) {
     if (DEBUG) console.log("<<<< PURIFY CODE".yellow);
 
     options = options || {};
+    if (options.freezeToJSON && options.freezeToJavaScript) {
+        throw new Error("The 'freezeToJSON' and 'freezeToJavaScript' options are mutually exclusive!");
+    }
 
     function notifyOnCodeblock (codeblock) {
         if (
@@ -534,6 +537,54 @@ exports.purifyCode = function (codeIn, options) {
                     )
                 );
 
+            } else
+            if (options.freezeToJavaScript) {
+
+                var replacement = new Codeblock(
+                    {
+                        raw: lines
+                            .join("\\n")
+                            .replace(/(___NeWlInE_KeEp_OrIgInAl___)/g, "\\$1"), //.replace(/\\n/g, "___NeWlInE___")
+                    },
+                    match[2],
+                    args
+                );
+
+                var ret = notifyOnCodeblock(replacement);
+                if (typeof ret !== "undefined") {
+                    replacement = ret;
+                }
+                
+                if (replacement.getFormat() === "javascript") {
+
+                    replacement = replacement.getCode();
+
+                    if (!/^[\s\n]*function/.test(replacement)) {
+                        replacement = [
+                            'function () {',
+                            replacement,
+                            '}'
+                        ].join("\n");
+                    }
+
+                } else {
+                    // TODO: Implement other formatters
+
+                    replacement = replacement.toString();
+                    
+                    replacement = (
+                        hasMoreLayers ?
+                            JSON.stringify(replacement)
+                            :
+                            JSON.stringify(replacement, null, 4)
+                    );
+                }
+
+                code = code.replace(
+                    new RegExp(REGEXP_ESCAPE('(' + match[1] + ')'), "g"),
+                    replacement
+                );
+
             } else {
 /*
                 lines = lines.map(function (line) {
@@ -612,7 +663,10 @@ exports.purifyCode = function (codeIn, options) {
         code = code.replace(/([^\\]|^)\\n/g, "$1\n");
 
         // Add common functionality to file.
-        if (options.freezeToJSON) {
+        if (
+            options.freezeToJSON ||
+            options.freezeToJavaScript
+        ) {
             // We do not need to add anything to a frozen JSON file.
         } else {
 //            code = ___WrApCoDe___.toString().replace(/\\/g, "\\\\").replace(/\$\$__filename\$\$/g, __dirname) + ";\n" + code;

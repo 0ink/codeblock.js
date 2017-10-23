@@ -1,7 +1,11 @@
 >>>TEST_IGNORE_LINE:\d+\spassing\s\([^\)]+\)<<<
 
 
-  Suite
+  Freeze to JSON
+    ✓ Purify Code Sync
+    ✓ Verify
+
+  Freeze to JavaScript
     ✓ Purify Code Sync
     ✓ Verify
 

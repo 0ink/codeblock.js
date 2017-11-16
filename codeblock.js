@@ -59,6 +59,7 @@ Codeblock.prototype.compile = function (variables) {
             segmentKey
         );
     }
+    // TODO: Use common helper
     var re = /(?:^|\n)(.*?)(["']?)(%%%([^%]+)%%%)(["']?)/;
     var match = null;
     while ( true ) {

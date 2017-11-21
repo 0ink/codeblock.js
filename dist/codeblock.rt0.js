@@ -4,6 +4,10 @@
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
+var REGEXP_ESCAPE = function REGEXP_ESCAPE(str) {
+    return str.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
+};
+
 function linesForEscapedNewline(rawCode) {
     var lines = [];
     var segments = rawCode.split(/([\\]*\\n)/);
@@ -60,7 +64,38 @@ Codeblock.prototype.compile = function (variables) {
     variables = variables || {};
     var code = this.getCode();
 
-    console.log("COMPILE", code, "with variables", variables);
+    // TODO: Use common helper
+    var re = /(?:^|\n)(.*?)(["']?)(%%%([^%]+)%%%)(["']?)/;
+    var match = null;
+    while (true) {
+        match = code.match(re);
+        if (!match) break;
+        var varParts = match[4].split(".");
+        var val = variables;
+        while (varParts.length > 0) {
+            val = val[varParts.shift()];
+            if (typeof val === "undefined") {
+                console.error("variables", variables);
+                throw new Error("Variable '" + match[4] + "' not found while processing code section!");
+            }
+        }
+        val = val.toString().split("\n").map(function (line, i) {
+            if (i > 0) {
+                line = match[1] + line;
+            }
+            return line;
+        }).join("\n");
+
+        var searchString = match[3];
+        if (match[2] === "'" && match[5] === "'") {
+            val = "'" + val.replace(/\\/g, "\\\\").replace(/'/g, "\\'") + "'";
+            searchString = "'" + searchString + "'";
+        } else if (match[2] === '"' && match[5] === '"') {
+            val = '"' + val.replace(/\\/g, "\\\\").replace(/"/g, "\\\"") + '"';
+            searchString = '"' + searchString + '"';
+        }
+        code = code.replace(new RegExp(REGEXP_ESCAPE(searchString), "g"), val);
+    }
 
     var codeblock = new Codeblock(code, this._format, this._args);
     codeblock._compiled = true;
@@ -69,7 +104,6 @@ Codeblock.prototype.compile = function (variables) {
 Codeblock.prototype.getCode = function () {
     return linesForEscapedNewline(this._code).join("\n");
 };
-
 },{}]},{},[1])(1)
 });
 var mainModule = window.mainModule;

@@ -964,6 +964,7 @@ exports.unpatchGlobalRequire = function () {
     originalRequire = null;
 }
 
+// TODO: Use https://stackoverflow.com/a/42648141
 exports.patchGlobalRequire = function () {
 
     const PATH = require("path");

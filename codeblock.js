@@ -177,7 +177,8 @@ Codeblock.thaw = function (ice) {
 // NOTE: This is a synchronous function!
 exports.requireJSON = function (path) {
     return exports.purifySync(path, {
-        freezeToJSON: true
+        freezeToJSON: true,
+        skipFrozenJSONVerify: true
     }).code;
 }
 
@@ -671,7 +672,7 @@ exports.purifyCode = function (codeIn, options) {
             // We do not need to add anything to a frozen JSON file.
         } else {
 //            code = ___WrApCoDe___.toString().replace(/\\/g, "\\\\").replace(/\$\$__filename\$\$/g, __dirname) + ";\n" + code;
-            code = ___WrApCoDe___.toString().replace(/\$\$__filename\$\$/g, __dirname) + ";\n" + code;
+            code = ___WrApCoDe___.toString().replace(/\$\$__filename\$\$/g, options.standalone ? require.resolve("./codeblock.rt0") : __dirname) + ";\n" + code;
         }
 
 

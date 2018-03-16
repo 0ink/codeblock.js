@@ -4,5 +4,6 @@ exports.TEST = {
 
         console.log("Hello World");
 
+        return null;
     <<<)
 };

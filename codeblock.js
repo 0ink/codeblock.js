@@ -138,6 +138,7 @@ Codeblock.prototype.run = function (variables, options) {
     }
     var sandbox = {
         console: console,
+        RESULT: undefined,
         THIS: options["this"] || null,
         ARGS: this._args.map(function (name) {
             return variables[name];
@@ -150,7 +151,7 @@ Codeblock.prototype.run = function (variables, options) {
         });
     }
     script.runInNewContext(sandbox);
-    return sandbox.RESULT || null;
+    return sandbox.RESULT;
 }
 Codeblock.thaw = function (ice) {
     if (typeof ice === "string") {

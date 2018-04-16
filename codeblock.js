@@ -531,7 +531,8 @@ exports.purifyCode = function (codeIn, options) {
                 replacement = replacement.toString();
 
                 code = code.replace(
-                    new RegExp(REGEXP_ESCAPE('(' + match[1] + ')'), "g"),
+                    //new RegExp(REGEXP_ESCAPE('(' + match[1] + ')'), "g"),
+                    '(' + match[1] + ')',
                     (
                         hasMoreLayers ?
                             JSON.stringify(replacement)

@@ -1,7 +1,7 @@
 [
     {
         "count": 117,
-        "value": "\nexports.TEST = {\n    \"data\": {\n        \"message\": {\n            \"part1\": \"Hello\",\n            \"part2\": \"World\"\n        },\n        \"chars\": \"`-=[]\\\\;',./~_+{}|:\\\"<>\"\n    },\n    \"main\": (javascript (data) >>>\n\n        const CODEBLOCK = require(\"../..\");\n\n        console.log(\"m1\", \"%%%data.message.part1%%% %%%data.message.part2%%%\");\n        console.log(\"m1\", JSON.stringify(data.message));\n\n        var impl = ("
+        "value": "\nexports.TEST = {\n    \"data\": {\n        \"message\": {\n            \"part1\": \"Hello\",\n            \"part2\": \"World\"\n        },\n        \"chars\": \"`.`-=[]\\\\;',./~_+{}|:\\\"<>\"\n    },\n    \"main\": (javascript (data) >>>\n\n        const CODEBLOCK = require(\"../..\");\n\n        console.log(\"m1\", \"%%%data.message.part1%%% %%%data.message.part2%%%\");\n        console.log(\"m1\", JSON.stringify(data.message));\n\n        var impl = ("
     },
     {
         "count": 2,
@@ -150,12 +150,12 @@
     {
         "count": 1,
         "removed": true,
-        "value": "\\\"`-=[]\\\\\\\\;',./~"
+        "value": "\\\"`.`-=[]\\\\\\\\;',./~"
     },
     {
         "count": 1,
         "added": true,
-        "value": "\"`-=[]\\\\;',./~"
+        "value": "\"`.`-=[]\\\\;',./~"
     },
     {
         "count": 1,
@@ -178,12 +178,12 @@
     {
         "count": 1,
         "removed": true,
-        "value": "'`-=[]\\\\\\\\;\\\\',./~"
+        "value": "'`.`-=[]\\\\\\\\;\\\\',./~"
     },
     {
         "count": 1,
         "added": true,
-        "value": "'`-=[]\\\\;\\',./~"
+        "value": "'`.`-=[]\\\\;\\',./~"
     },
     {
         "count": 1,
@@ -234,12 +234,12 @@
     {
         "count": 1,
         "removed": true,
-        "value": "\\\"`-=[]\\\\\\\\;',./~"
+        "value": "\\\"`.`-=[]\\\\\\\\;',./~"
     },
     {
         "count": 1,
         "added": true,
-        "value": "\"`-=[]\\\\;',./~"
+        "value": "\"`.`-=[]\\\\;',./~"
     },
     {
         "count": 1,
@@ -304,12 +304,12 @@
     {
         "count": 1,
         "removed": true,
-        "value": "\\\"`-=[]\\\\\\\\;',./~"
+        "value": "\\\"`.`-=[]\\\\\\\\;',./~"
     },
     {
         "count": 1,
         "added": true,
-        "value": "\"`-=[]\\\\;',./~"
+        "value": "\"`.`-=[]\\\\;',./~"
     },
     {
         "count": 1,
@@ -374,12 +374,12 @@
     {
         "count": 1,
         "removed": true,
-        "value": "\\\"`-=[]\\\\\\\\;',./~"
+        "value": "\\\"`.`-=[]\\\\\\\\;',./~"
     },
     {
         "count": 1,
         "added": true,
-        "value": "\"`-=[]\\\\;',./~"
+        "value": "\"`.`-=[]\\\\;',./~"
     },
     {
         "count": 1,
@@ -514,12 +514,12 @@
     {
         "count": 1,
         "removed": true,
-        "value": "\\\"`-=[]\\\\\\\\;',./~"
+        "value": "\\\"`.`-=[]\\\\\\\\;',./~"
     },
     {
         "count": 1,
         "added": true,
-        "value": "\"`-=[]\\\\;',./~"
+        "value": "\"`.`-=[]\\\\;',./~"
     },
     {
         "count": 1,
@@ -542,12 +542,12 @@
     {
         "count": 1,
         "removed": true,
-        "value": "'`-=[]\\\\\\\\;\\\\',./~"
+        "value": "'`.`-=[]\\\\\\\\;\\\\',./~"
     },
     {
         "count": 1,
         "added": true,
-        "value": "'`-=[]\\\\;\\',./~"
+        "value": "'`.`-=[]\\\\;\\',./~"
     },
     {
         "count": 1,

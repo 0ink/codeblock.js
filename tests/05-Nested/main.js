@@ -5,7 +5,7 @@ exports.TEST = {
             "part1": "Hello",
             "part2": "World"
         },
-        "chars": "`-=[]\\;',./~_+{}|:\"<>"
+        "chars": "`.`-=[]\\;',./~_+{}|:\"<>"
     },
     "main": function /*CodeBlock*/ (data) {
 
@@ -22,18 +22,18 @@ exports.TEST = {
             console.log('s3:', '%%%data.chars%%%');
             console.log('s4:', "%%%data.chars%%%");
             console.log('s5:', data.chars);
-            console.log('s6:', "`-=[]\\;',./~_+{}|:\"<>");
-            console.log('s7:', '`-=[]\\;\',./~_+{}|:"<>');
+            console.log('s6:', "`.`-=[]\\;',./~_+{}|:\"<>");
+            console.log('s7:', '`.`-=[]\\;\',./~_+{}|:"<>');
 
-            if ("%%%data.chars%%%" !== "`-=[]\\;',./~_+{}|:\"<>") {
+            if ("%%%data.chars%%%" !== "`.`-=[]\\;',./~_+{}|:\"<>") {
                 throw new Error("data.chars [1] mis-match");
             }
 
-            if ('%%%data.chars%%%' !== "`-=[]\\;',./~_+{}|:\"<>") {
+            if ('%%%data.chars%%%' !== "`.`-=[]\\;',./~_+{}|:\"<>") {
                 throw new Error("data.chars [2] mis-match");
             }
 
-            if (data.chars !== "`-=[]\\;',./~_+{}|:\"<>") {
+            if (data.chars !== "`.`-=[]\\;',./~_+{}|:\"<>") {
                 throw new Error("data.chars [3] mis-match");
             }
 
@@ -41,8 +41,8 @@ exports.TEST = {
                 m1: data.message,
                 c1: '%%%data.chars%%%',
                 c2: "%%%data.chars%%%",
-                c3: "`-=[]\\;',./~_+{}|:\"<>",
-                c4: '`-=[]\\;\',./~_+{}|:"<>',
+                c3: "`.`-=[]\\;',./~_+{}|:\"<>",
+                c4: '`.`-=[]\\;\',./~_+{}|:"<>',
                 c5: data.chars
             };
         }

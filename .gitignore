@@ -1,5 +1,6 @@
 /node_modules/
 *~.*
+*.~*
 /tests/.run.bash.log
 /.installed*
 .actual.*

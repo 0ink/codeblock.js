@@ -1,5 +1,7 @@
 
 const REGEXP_ESCAPE = require("escape-string-regexp");
+
+const PATH = require("path");
 const FS = require("fs");
 const ESPRIMA = require("esprima");
 const JSONLINT = require("jsonlint");
@@ -59,29 +61,38 @@ Codeblock.prototype.compile = function (variables) {
             segmentKey
         );
     }
+
     // TODO: Use common helper
     var re = /(?:^|\n)(.*?)(["']?)(%%%([^%]+)%%%)(["']?)/;
     var match = null;
+    var skipSearches = [];
     while ( true ) {
         match = code.match(re);
         if (!match) break;
-        var varParts = match[4].split(".");
-        var val = variables;
-        while (varParts.length > 0) {
-            val = val[varParts.shift()];
-            if (typeof val === "undefined") {
-                console.error("variables", variables);
-                throw new Error("Variable '" + match[4] + "' not found while processing code section!");
+
+        var searchString = match[3];
+        var varValue = variables;
+
+        if (typeof varValue === "function") {
+            varValue = varValue(match[4]);
+        } else {
+            var varParts = match[4].split(".");
+            while (varParts.length > 0) {
+                varValue = varValue[varParts.shift()];
+                if (typeof varValue === "undefined") {
+                    console.error("variables", variables);
+                    throw new Error("Variable '" + match[4] + "' not found while processing code section!");
+                }
             }
         }
-        val = val.toString().split("\n").map(function (line, i) {
+
+        var val = varValue.toString().split("\n").map(function (line, i) {
             if (i > 0) {
                 line = match[1] + line;
             }
             return line;
         }).join("\n");
 
-        var searchString = match[3];
         if (match[2] === "'" && match[5] === "'") {
             val = "'" + val.replace(/\\/g, "\\\\").replace(/'/g, "\\'") + "'";
             searchString = "'" + searchString + "'";
@@ -90,8 +101,20 @@ Codeblock.prototype.compile = function (variables) {
             val = '"' + val.replace(/\\/g, "\\\\").replace(/"/g, "\\\"") + '"';
             searchString = '"' + searchString + '"';
         }
+        if (
+            typeof varValue === 'object' &&
+            varValue.replaceVariables === false
+        ) {
+            skipSearches.push(val);
+            val = '__VAL__' + (skipSearches.length - 1) + '__';
+        }
+
+        var codeBefore = code;
         code = code.replace(new RegExp(REGEXP_ESCAPE(searchString), "g"), val);
     }
+    skipSearches.forEach(function (val, i) {
+        code = code.replace(new RegExp('__VAL__' + i + '__', "g"), val);
+    });
 
     // Do not compile variables within '(___WrApCoDe___("javascript", ["data"], "' and '", "___WrApCoDe___END")'
     // Replace placeholders from above with original code.
@@ -107,6 +130,7 @@ Codeblock.prototype.compile = function (variables) {
 
     var codeblock = new Codeblock({raw: code}, this._format, this._args);
     codeblock._compiled = true;
+
     return codeblock;
 }
 Codeblock.prototype.run = function (variables, options) {
@@ -246,6 +270,29 @@ exports.purifySync = function (path, options) {
 
     options = options || {};
 
+    // We cache the compiled file by default
+    if (typeof options.cacheCompiled === "undefined") {
+        options.cacheCompiled = true;
+    }
+
+    // TODO: Use 'pinf-it' helper to generate cache path
+    var purifiedPath = PATH.join(
+        PATH.dirname(path),
+        ".~" + PATH.basename(path) + "~codeblock-purified.js"
+    );
+
+    if (
+        options.cacheCompiled &&
+        FS.existsSync(purifiedPath) &&
+        FS.statSync(purifiedPath).mtime.getTime() >= FS.statSync(path).mtime.getTime()
+    ) {
+        return {
+            sourcePath: path,
+            code: FS.readFileSync(purifiedPath, "utf8"),
+            purifiedPath: purifiedPath
+        };
+    }
+
     var code = path;
     if (/^\//.test(code)) {
         code = FS.readFileSync(path, "utf8");
@@ -254,10 +301,11 @@ exports.purifySync = function (path, options) {
 
     if (code._foundBlocks) {
 
-        // TODO: Make configurable
-        //var compiledPath = LIB.PATH.join(path, "..", ".io/cache.modules", LIB.PATH.basename(path));
-        var purifiedPath = path + "~.pure.js";
-        FS.writeFileSync(purifiedPath, code, "utf8");
+        if (options.cacheCompiled) {
+            // TODO: Make configurable
+            //var compiledPath = LIB.PATH.join(path, "..", ".io/cache.modules", LIB.PATH.basename(path));
+            FS.writeFileSync(purifiedPath, code, "utf8");
+        }
 
         return {
             sourcePath: path,
@@ -402,6 +450,11 @@ exports.purifyCode = function (codeIn, options) {
 
     // TODO: Only recompile if need be. Need to keep cache in memory and on disk.
 
+    if (typeof codeIn.replace !== "function") {
+        console.error("codeIn", codeIn);
+        throw new Error("'codeIn' does not appear to be a string as it does not have a 'replace' function!");
+    }
+
     var preparedCodeIn = codeIn.replace(/\\n/g, "___NeWlInE_KeEp_OrIgInAl___");
 
     var code = exports.jsonFunctionsToJavaScriptCodeblocks(preparedCodeIn).replace(/\n/g, "\\n");
@@ -492,6 +545,7 @@ exports.purifyCode = function (codeIn, options) {
                 return keep;
             });
 
+            // Normalize indenting
             if (lines[0]) {
                 var lineRe = new RegExp("^" + REGEXP_ESCAPE(lines[0].match(/^([\t\s]*)/)[0]));
                 lines = lines.map(function (line, i) {
@@ -706,6 +760,35 @@ exports.purifyCode = function (codeIn, options) {
     }
 
     if (/>{3}\s*\\n(.*?)\\n\s*<{3}/.test(code)) {
+
+        // Temporary replace all strings denoted with ` ... ` so that codeblocks within
+        // the strings do not get touched.
+        // TODO: Optionally compile codeblocks in strings to JSON
+        var stringBlocks = [];
+        if (/\`/.test(code)) {
+            var match = null;
+            var re = /(?:^|[^\`])\`([^\`]+)\`(?:[^\`]|$)/g;
+            while ( (match = re.exec(code)) ) {
+                var key = Object.keys(stringBlocks).length;
+                stringBlocks[key] = match[1];
+            }
+            if (stringBlocks.length) {
+                stringBlocks.forEach(function (blockCode, i) {                    
+                    code = code.replace(new RegExp(REGEXP_ESCAPE(blockCode), "g"), "___StRiNg_BlOcC_" + i + "___");
+                });
+            }
+        }
+
+        function restoreStringBlocks (code) {
+            if (!stringBlocks.length) {
+                return code;
+            }
+            stringBlocks.forEach(function (blockCode, i) {                    
+                code = code.replace(new RegExp("___StRiNg_BlOcC_" + i + "___", "g"), blockCode);
+            });
+            return code;
+        }
+    
         var codeOut = purifyLayer(code);
 
         codeOut = codeOut.replace(/___NeWlInE_KeEp_OrIgInAl___/g, "\\n");
@@ -714,10 +797,11 @@ exports.purifyCode = function (codeIn, options) {
         if (DEBUG) process.stdout.write(codeOut + "\n");
         if (DEBUG) console.log("<<<< PURIFIED CODE".yellow);
 
-        codeOut = new String(codeOut);
+        codeOut = new String(restoreStringBlocks(codeOut));
         codeOut._foundBlocks = true;
         return codeOut;
     }
+    
     return codeIn;
 }
 
@@ -970,11 +1054,8 @@ exports.unpatchGlobalRequire = function () {
 // TODO: Use https://stackoverflow.com/a/42648141
 exports.patchGlobalRequire = function () {
 
-    const PATH = require("path");
-    const FS = require("fs");
-
     // @see https://github.com/bahmutov/really-need/blob/master/index.js
-    var Module = require('module');
+    const Module = require('module');
 
     originalRequire = Module.prototype.require;
     Module.prototype.require = function (uri) {
@@ -1014,5 +1095,37 @@ exports.patchGlobalRequire = function () {
             console.error(err.stack);
             throw err;
         }
+    }
+}
+
+exports.makeRequire = function (moduleRequire, options) {
+
+    options = options || {};
+
+    // @see https://github.com/bahmutov/really-need/blob/master/index.js
+    const Module = require('module');
+
+    return function (uri) {
+
+        var path = moduleRequire.resolve(uri);
+
+        var purified = exports.purifySync(path, options);
+
+        if (!purified.purifiedPath) {
+            return moduleRequire(path);
+        }
+
+        if (DEBUG) console.log("RUN CODE >>>>".yellow);
+        if (DEBUG) process.stdout.write(purified.code + "\n");
+        if (DEBUG) console.log("<<<< RUN CODE".yellow);
+
+        var mod = new Module(purified.sourcePath, this);
+        mod.parent = this;
+        mod.filename = purified.sourcePath;
+        mod.paths = Module._nodeModulePaths(PATH.dirname(purified.sourcePath));
+        mod.loaded = true;
+        mod._compile(purified.code, purified.sourcePath);
+        Module._cache[purified.sourcePath] = mod;
+        return mod.exports;
     }
 }

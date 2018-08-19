@@ -1,0 +1,9 @@
+>>>TEST_IGNORE_LINE:\d+\spassing\s\([^\)]+\)<<<
+
+
+  Nested as String
+    ✓ dynamic compile
+    ✓ cached compile
+
+
+

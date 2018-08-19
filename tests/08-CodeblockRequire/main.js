@@ -29,8 +29,8 @@ describe('Codeblock Require', function () {
 
     it('cached compile', function () {
 
-        if (FS.existsSync(".~rep.js~purified.js")) {
-            FS.unlinkSync(".~rep.js~purified.js");
+        if (FS.existsSync(".~rep.js~codeblock-purified.js")) {
+            FS.unlinkSync(".~rep.js~codeblock-purified.js");
         }
 
         var exports = CODEBLOCK.makeRequire(require, {
@@ -53,7 +53,7 @@ describe('Codeblock Require', function () {
             "_compiled": false
         });
 
-        exports = require("./.~rep.js~purified.js");
+        exports = require("./.~rep.js~codeblock-purified.js");
 
         ASSERT.deepEqual(exports.block1(), {
             ".@": "github.com~0ink~codeblock/codeblock:Codeblock",

@@ -86,6 +86,15 @@ Codeblock.prototype.compile = function (variables) {
             }
         }
 
+        if (
+            !varValue ||
+            typeof varValue.toString !== "function"
+        ) {
+            console.error("searchString", searchString);
+            console.error("varValue", varValue);
+            throw new Error("Value does not have a toString() function!");
+        }
+
         var val = varValue.toString().split("\n").map(function (line, i) {
             if (i > 0) {
                 line = match[1] + line;

@@ -284,8 +284,9 @@ exports.purifySync = function (path, options) {
     if (
         options.cacheCompiled &&
         FS.existsSync(purifiedPath) &&
-        FS.statSync(purifiedPath).mtime.getTime() >= FS.statSync(path).mtime.getTime()
-    ) {
+        FS.statSync(purifiedPath).mtime.getTime() >= FS.statSync(path).mtime.getTime() &&
+        !process.env.CODEBLOCK_FORCE_COMPILE
+    ) {        
         return {
             sourcePath: path,
             code: FS.readFileSync(purifiedPath, "utf8"),
@@ -537,13 +538,15 @@ exports.purifyCode = function (codeIn, options) {
             }
 
             // Skip commented out lines starting with '#' or '//'
-            lines = lines.filter(function (line) {
-                var keep = (!/^[\s\t]*(#(?!#)(?!\!)|\/\/)/.test(line));
-                if (!keep) {
-                    if (process.env.VERBOSE) console.log("Ignore line:", line);
-                }
-                return keep;
-            });
+            if (options.stripComments !== false) {
+                lines = lines.filter(function (line) {
+                    var keep = (!/^[\s\t]*(#(?!#)(?!\!)|\/\/)/.test(line));
+                    if (!keep) {
+                        if (process.env.VERBOSE) console.log("Ignore line:", line);
+                    }
+                    return keep;
+                });
+            }
 
             // Normalize indenting
             if (lines[0]) {
@@ -728,7 +731,12 @@ exports.purifyCode = function (codeIn, options) {
             // We do not need to add anything to a frozen JSON file.
         } else {
 //            code = ___WrApCoDe___.toString().replace(/\\/g, "\\\\").replace(/\$\$__filename\$\$/g, __dirname) + ";\n" + code;
-            code = ___WrApCoDe___.toString().replace(/\$\$__filename\$\$/g, options.standalone ? require.resolve("./codeblock.rt0") : __dirname) + ";\n" + code;
+            code = ___WrApCoDe___.toString().replace(
+                /\$\$__filename\$\$/g,
+                options.standalone ?
+                    require.resolve("./codeblock.rt0") :
+                    (options.codeblockPackageUri || __dirname)
+            ) + ";\n" + code;
         }
 
 

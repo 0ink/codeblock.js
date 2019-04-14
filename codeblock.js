@@ -478,6 +478,14 @@ exports.purifyCode = function (codeIn, options) {
         // Resolve codeblocks one layer at a time starting with the deepest.
         var hasMoreLayers = false;
         var layerSegments = code.split(/(>>>|<<<)/);
+
+        for (var i=0; i < layerSegments.length; i++) {
+            if (/^TEST_[^\n]+$/.test(layerSegments[i])) {
+                layerSegments[i-2] += layerSegments.splice(i-1, i+3).pop();
+                i -= 1;
+            }
+        }
+
         if (layerSegments.length > 5) {
             var layerSegmentDepth = {};
             var currentDepth = 0;
@@ -740,7 +748,15 @@ exports.purifyCode = function (codeIn, options) {
             // We do not need to add anything to a frozen JSON file.
         } else {
 //            code = ___WrApCoDe___.toString().replace(/\\/g, "\\\\").replace(/\$\$__filename\$\$/g, __dirname) + ";\n" + code;
-            code = ___WrApCoDe___.toString().replace(
+
+            var shebang = code.match(/^(#!.+\n)/);
+            if (shebang) {
+                code = code.replace(/^#!.+\n/, '');
+            }
+
+            code = (
+                shebang && shebang[1]
+            ) + ___WrApCoDe___.toString().replace(
                 /\$\$__filename\$\$/g,
                 options.standalone ?
                     require.resolve("./codeblock.rt0") :

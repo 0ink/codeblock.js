@@ -5,3 +5,4 @@
 /.installed*
 .actual.*
 .rt/
+/package-lock.json

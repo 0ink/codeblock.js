@@ -8,6 +8,10 @@ const JSONLINT = require("jsonlint");
 
 const DEBUG = /(^|\s)codeblock(\s|$)/.test(process.env.DEBUG || "") || false;
 
+if (DEBUG) {
+    // TODO: Use 'require("colors/safe")'
+    require("colors");
+}
 
 var Codeblock = exports.Codeblock = function (code, format, args) {
     this[".@"] = "github.com~0ink~codeblock/codeblock:Codeblock";
@@ -755,7 +759,7 @@ exports.purifyCode = function (codeIn, options) {
             }
 
             code = (
-                shebang && shebang[1]
+                (shebang && shebang[1]) || ''
             ) + ___WrApCoDe___.toString().replace(
                 /\$\$__filename\$\$/g,
                 options.standalone ?

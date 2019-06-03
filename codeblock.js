@@ -593,9 +593,9 @@ exports.purifyCode = function (codeIn, options) {
 
                 var replacement = new Codeblock(
                     {
-                        raw: lines
+                        raw: restoreStringBlocks(lines
                             .join("\\n")
-                            .replace(/(___NeWlInE_KeEp_OrIgInAl___)/g, "\\$1"), //.replace(/\\n/g, "___NeWlInE___")
+                            .replace(/(___NeWlInE_KeEp_OrIgInAl___)/g, "\\$1")), //.replace(/\\n/g, "___NeWlInE___")
                     },
                     match[2],
                     args
@@ -624,9 +624,9 @@ exports.purifyCode = function (codeIn, options) {
 
                 var replacement = new Codeblock(
                     {
-                        raw: lines
+                        raw: restoreStringBlocks(lines
                             .join("\\n")
-                            .replace(/(___NeWlInE_KeEp_OrIgInAl___)/g, "\\$1"), //.replace(/\\n/g, "___NeWlInE___")
+                            .replace(/(___NeWlInE_KeEp_OrIgInAl___)/g, "\\$1")), //.replace(/\\n/g, "___NeWlInE___")
                     },
                     match[2],
                     args

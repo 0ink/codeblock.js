@@ -190,6 +190,53 @@ Codeblock.prototype.run = function (variables, options) {
     script.runInNewContext(sandbox);
     return sandbox.RESULT;
 }
+Codeblock.prototype.runAsync = async function (variables, options) {
+    variables = variables || {};
+    options = options || {};
+    const VM = require('vm');
+    if (!this._compiled) {
+        var codeblock = this.compile(variables);
+        return codeblock.runAsync(variables, options);
+    }
+    var code = this.getCode();
+    if (DEBUG) {
+        console.log("[codeblock] variables:", Object.keys(variables));
+        console.log("[codeblock] options:", Object.keys(options));
+        console.log("[codeblock] Code to execute in VM", code);
+    }
+    try {
+        var script = new VM.Script([
+            'RUNNER = async function (',
+            this._args.join(', '),
+            ') { ',
+            code.replace(/&#96;/g, "\`"),
+            ' }'
+        ].join(""));
+    } catch (err) {
+        console.log("this._code", this._code);
+        console.log("code", code);
+        throw err;
+    }
+    var sandbox = {
+        console: console,
+        RESULT: undefined,
+        THIS: options["this"] || null,
+        ARGS: this._args.map(function (name) {
+            return variables[name];
+        }),
+        ___WrApCoDe___: ___WrApCoDe___
+    };
+    if (options.sandbox) {
+        Object.keys(options.sandbox).forEach(function (name) {
+            sandbox[name] = options.sandbox[name];
+        });
+    }
+    script.runInNewContext(sandbox);
+
+    sandbox.RESULT = await sandbox.RUNNER.apply(sandbox.THIS, sandbox.ARGS);
+
+    return sandbox.RESULT;
+}
 Codeblock.thaw = function (ice) {
     if (typeof ice === "string") {
         ice = JSON.parse(ice);
@@ -975,10 +1022,7 @@ exports.thawFromJSON = function (json) {
         ) {
             value = Codeblock.thaw(value);
         } else
-        if (
-            typeof value === "object" &&
-            value['.@'] === 'github.com~0ink~codeblock/codeblock:Codeblock'
-        ) {
+        if (exports.isCodeblock(value)) {
             value = Codeblock.thaw(value);
         }
         this.update(value);
@@ -1001,14 +1045,17 @@ exports.compile = function (obj, args) {
     return obj;
 }
 
+exports.isCodeblock = function (obj) {
+    return (
+        typeof obj === "object" &&
+        obj['.@'] === 'github.com~0ink~codeblock/codeblock:Codeblock'
+    );
+}
 
 exports.compileAll = function (obj) {
     const TRAVERSE = require("traverse");
     return TRAVERSE(obj).map(function (value) {
-        if (
-            typeof value === "object" &&
-            value['.@'] === 'github.com~0ink~codeblock/codeblock:Codeblock'
-        ) {
+        if (exports.isCodeblock(value)) {
             value = value.compile(this.parent.node);
         }
         this.update(value);
@@ -1023,10 +1070,7 @@ exports.run = function (obj, args, options) {
     ) {
         obj = obj(args, exports.Codeblock);
     }
-    if (
-        typeof obj === "object" &&
-        obj['.@'] === 'github.com~0ink~codeblock/codeblock:Codeblock'
-    ) {
+    if (exports.isCodeblock(obj)) {
         if (typeof obj.compile !== "function") {
             obj = Codeblock.thaw(obj);
         }

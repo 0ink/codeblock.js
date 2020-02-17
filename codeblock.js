@@ -1,10 +1,9 @@
 
-const REGEXP_ESCAPE = require("escape-string-regexp");
-
 const PATH = require("path");
 const FS = require("fs");
 const ESPRIMA = require("esprima");
 const JSONLINT = require("jsonlint");
+const REGEXP_ESCAPE = require("escape-string-regexp");
 
 const DEBUG = /(^|\s)codeblock(\s|$)/.test(process.env.DEBUG || "") || false;
 
@@ -1205,8 +1204,9 @@ exports.makeRequire = function (moduleRequire, options) {
         mod.filename = purified.sourcePath;
         mod.paths = Module._nodeModulePaths(PATH.dirname(purified.sourcePath));
         mod.loaded = true;
-        mod._compile(purified.code, purified.sourcePath);
+        mod._compile(purified.code.toString(), purified.sourcePath);
         Module._cache[purified.sourcePath] = mod;
+
         return mod.exports;
     }
 }

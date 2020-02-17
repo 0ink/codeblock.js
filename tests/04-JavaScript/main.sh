@@ -1,5 +1,5 @@
-#!/usr/bin/env bash.origin.script
+#!/usr/bin/env bash
 
-BO_run_node "${__DIRNAME__}/../run-sequence.js"
+node "../run-sequence.js"
 
 echo "OK"

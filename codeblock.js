@@ -1156,7 +1156,7 @@ exports.patchGlobalRequire = function () {
                 mod.filename = purified.sourcePath;
                 mod.paths = Module._nodeModulePaths(PATH.dirname(purified.sourcePath));
                 mod.loaded = true;
-                mod._compile(purified.code, purified.sourcePath);
+                mod._compile(purified.code.toString(), purified.sourcePath);
                 Module._cache[purified.sourcePath] = mod;
                 return mod.exports;
 

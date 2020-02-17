@@ -1,4 +1,8 @@
-#!/usr/bin/env bash.origin.test via github.com/nightwatchjs/nightwatch
+#!/usr/bin/env node
+
+// TODO: Use headless puppeteer
+
+//#!/usr/bin/env bash.origin.test via github.com/nightwatchjs/nightwatch
 /*
 module.config = {
     "browsers": [

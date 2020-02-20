@@ -1084,6 +1084,27 @@ exports.run = function (obj, args, options) {
     return obj;
 }
 
+exports.runAsync = async function (obj, args, options) {
+    if (
+        typeof obj === "function" &&
+        obj.toString().split("\n")[0] === ___WrApCoDe___WrappedCodeblock___Signature
+    ) {
+        obj = obj(args, exports.Codeblock);
+    }
+    if (exports.isCodeblock(obj)) {
+        if (typeof obj.compile !== "function") {
+            obj = Codeblock.thaw(obj);
+        }
+        obj = obj.compile(args);
+    }
+    if (
+        typeof obj === "object" &&
+        obj instanceof Codeblock
+    ) {
+        return obj.runAsync(args, options);
+    }
+    return obj;
+}
 
 exports.runAll = function (obj, args, options) {
     if (typeof options === "undefined") {

@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-// TODO: Use headless puppeteer
-
 //#!/usr/bin/env bash.origin.test via github.com/nightwatchjs/nightwatch
 /*
 module.config = {
@@ -16,12 +14,13 @@ module.config = {
 console.log(">>>SKIP_TEST<<<");
 process.exit(0);
 
-
 console.log(">>>TEST_IGNORE_LINE:^[\\d\\.]+\\s<<<");
+
+const LIB = require('bash.origin.lib').js;
 
 describe("Suite", function() {
 
-    require('bash.origin.workspace').LIB.BASH_ORIGIN_EXPRESS.runForTestHooks(before, after, {
+    const server = LIB.BASH_ORIGIN_EXPRESS.runForTestHooks(before, after, {
         "routes": {
             "/": function /* CodeBlock */ () {
 
@@ -45,7 +44,7 @@ describe("Suite", function() {
                 };
             },
             "/dist/codeblock.rt0.js": {
-                "@it.pinf.org.browserify#s1": {
+                "@it.pinf.org.browserify # router/v0": {
                     "src": __dirname + "/../../codeblock.rt0.js",
                     "dist": __dirname + "/../../dist/codeblock.rt0.js",
                     "prime": true,
@@ -57,10 +56,12 @@ describe("Suite", function() {
         }
     });
 
-    it('Test', function (client) {
+    it('Test', async function (client) {
+
+        const PORT = (await server).config.port;
 
         // Run as page
-        client.url('http://localhost:' + process.env.PORT + '/').pause(500);
+        client.url('http://localhost:' + PORT + '/').pause(500);
         client.waitForElementPresent('BODY', 3000);        
         client.expect.element('BODY').text.to.contain([
             'Hello World!'

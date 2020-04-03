@@ -22,9 +22,8 @@ Such a `codeblock` is compiled for execution **at build time** or using a **requ
 Install
 -------
 
-````sh
-npm install codeblock --save
-````
+    npm install codeblock
+    node_modules/.bin/lib.json from node_modules > .~lib.json
 
 API
 ---
@@ -66,7 +65,7 @@ Source Formats
 
 `codeblock` supports converting between the following **interchangeable** source formats.
 
-## JavaScript Source
+## JavaScript/JSON Source
 
 ````js
 exports.TEST = {
@@ -83,7 +82,7 @@ exports.TEST = {
 }
 ````
 
-## JSON
+## JavaScript/JSON Serialized
 
 ````js
 exports.TEST = {

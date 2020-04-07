@@ -864,6 +864,7 @@ exports.freezeToSource = function (obj, options) {
     var segments = [];
     var source = TRAVERSE(obj).map(function (value) {
         if (
+            value &&
             typeof value === "object" &&
             value['.@'] === 'github.com~0ink~codeblock/codeblock:Codeblock'
         ) {

@@ -1,7 +1,7 @@
 {
   "name": "codeblock",
   "main": "./codeblock.js",
-  "version": "0.3.16-pre.2",
+  "version": "0.3.16-pre.3",
   "pm": {
     "publish": "npm"
   },

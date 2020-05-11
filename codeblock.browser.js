@@ -91,7 +91,7 @@ Codeblock.prototype.compile = function (variables) {
 
         var val = varValue.toString().split("\n").map(function (line, i) {
             if (i > 0) {
-                line = match[1] + line;
+                line = match[1].replace(/[\s\S]/g, ' ') + line;
             }
             return line;
         }).join("\n");
@@ -196,18 +196,24 @@ Codeblock.prototype.runAsync = async function (variables, options) {
     }
     var code = this.getCode();
     if (exports.DEBUG) {
+        console.log("[codeblock] this._args:", this._args);
         console.log("[codeblock] variables:", Object.keys(variables));
         console.log("[codeblock] options:", Object.keys(options));
         console.log("[codeblock] Code to execute in VM", code);
     }
+
+    let script = null;
+
     try {
-        var script = new VM.Script([
+        let scriptCode = [
             'RUNNER = async function (',
             this._args.join(', '),
             ') { ',
             code.replace(/&#96;/g, "\`"),
             ' }'
-        ].join(""));
+        ].join("");
+
+        script = new VM.Script(scriptCode);
     } catch (err) {
         console.log("this._code", this._code);
         console.log("code", code);
@@ -915,7 +921,7 @@ exports.freezeToSource = function (obj, options) {
             value = "___BlOcK___" + (segments.length - 1) + "___";
         } else
         if (typeof value === "function") {
-            var func = value.toString().replace(/^(function\s)/, "$1/* CodeBlock */ ");
+            var func = value.toString().replace(/\/\*\s*CodeBlock\s*\*\//, '').replace(/^(function\s)/, "$1/* CodeBlock */ ");
             if (options.oneline) {
                 func = func.replace(/\n/g, " ");
             }

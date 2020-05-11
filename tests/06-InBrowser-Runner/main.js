@@ -1,6 +1,4 @@
-#!/usr/bin/env node
-
-//#!/usr/bin/env bash.origin.test via github.com/nightwatchjs/nightwatch
+#!/usr/bin/env bash.origin.test via github.com/nightwatchjs/nightwatch
 /*
 module.config = {
     "browsers": [
@@ -9,10 +7,6 @@ module.config = {
     "test_runner": "mocha"
 }
 */
-
-// TODO: Re-enable once bach.origin.cache works.
-console.log(">>>SKIP_TEST<<<");
-process.exit(0);
 
 console.log(">>>TEST_IGNORE_LINE:^[\\d\\.]+\\s<<<");
 
@@ -44,12 +38,12 @@ describe("Suite", function() {
                 };
             },
             "/dist/codeblock.rt0.js": {
-                "@it.pinf.org.browserify # router/v0": {
-                    "src": __dirname + "/../../codeblock.rt0.js",
-                    "dist": __dirname + "/../../dist/codeblock.rt0.js",
-                    "prime": true,
-                    "expose": {
-                        "window": "Codeblock"
+                "gi0.PINF.it/build/v0 # /dist # /codeblock.rt0.js": {
+                    "@it.pinf.org.browserify # router/v1": {
+                        "src": __dirname + "/../../codeblock.rt0.js",
+                        "expose": {
+                            "window": "Codeblock"
+                        }
                     }
                 }
             }

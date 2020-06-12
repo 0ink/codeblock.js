@@ -55,14 +55,14 @@ describe('Multi-line Compile Variables', function () {
             }
         });
 
-        console.log("BLOCK1:", codeblocks.block1.getCode());        
+        // console.log("BLOCK1:", codeblocks.block1.getCode());        
         ASSERT.equal(codeblocks.block1.getCode(), [
             '{',
             '    "config": {"foo":"bar","baz":"zop"}',
             '}'
         ].join("\n"));
 
-        console.log("BLOCK2:", codeblocks.block2.getCode());
+        // console.log("BLOCK2:", codeblocks.block2.getCode());
         ASSERT.equal(codeblocks.block2.getCode(), [
             'PRE',
             '    {',
@@ -72,7 +72,7 @@ describe('Multi-line Compile Variables', function () {
             'POST'
         ].join("\n"));
 
-        console.log("BLOCK3:", codeblocks.block3.getCode());
+        // console.log("BLOCK3:", codeblocks.block3.getCode());
         ASSERT.equal(codeblocks.block3.getCode(), [
             '{',
             '    "config": {',

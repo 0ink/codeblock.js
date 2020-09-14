@@ -598,6 +598,7 @@ exports.purifyCode = function (codeIn, options) {
                     {
                         raw: restoreStringBlocks(lines
                             .join("\\n")
+                            .replace(/\$/g, '$$$$')
                             .replace(/(___NeWlInE_KeEp_OrIgInAl___)/g, "\\$1")), //.replace(/\\n/g, "___NeWlInE___")
                     },
                     match[2],
@@ -610,6 +611,8 @@ exports.purifyCode = function (codeIn, options) {
                 }
 
                 replacement = replacement.toString();
+
+                if (exports.DEBUG) console.log("replacement:".yellow, replacement);
 
                 code = code.replace(
                     //new RegExp(REGEXP_ESCAPE('(' + match[1] + ')'), "g"),

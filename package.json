@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "bash.origin.test": "^0.3.0-pre.0",
+    "it.pinf.org.browserify": "^0.2.0-pre.0",
     "fs-extra": "^8.1.0",
     "diff": "^3.0.1",
     "mocha": "^7.0.1"

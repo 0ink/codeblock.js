@@ -1,0 +1,8 @@
+>>>TEST_IGNORE_LINE:\d+\spassing\s\([^\)]+\)<<<
+
+
+  Variable Replacement
+    ✓ Source to Serialized (with $)
+
+
+

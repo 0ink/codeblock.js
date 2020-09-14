@@ -573,10 +573,22 @@ exports.purifyCode = function (codeIn, options) {
             }
 
             // Normalize indenting
+            let shortestIndent = null;
             if (lines.length) {
-                let shortestIndent = null;
+                // hack to avoid considering lines where a nested codeblock has already been resolved.
+                let inCodeblock = false;
                 lines.forEach(function (line) {
                     if (/^[\s\t]*$/.test(line)) {
+                        return;
+                    }
+                    if (/\(___WrApCoDe___\(/.test(line)) {
+                        inCodeblock = true;
+                        return;
+                    }
+                    if (inCodeblock) {
+                        if (/"___WrApCoDe___END"/.test(line)) {
+                            inCodeblock = false;
+                        }
                         return;
                     }
                     const indentStr = line.match(/^([\t\s]*)/)[1];

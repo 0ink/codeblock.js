@@ -573,11 +573,27 @@ exports.purifyCode = function (codeIn, options) {
             }
 
             // Normalize indenting
-            if (lines[0]) {
-                var lineRe = new RegExp("^" + REGEXP_ESCAPE(lines[0].match(/^([\t\s]*)/)[0]));
-                lines = lines.map(function (line, i) {
-                    return line.replace(lineRe, "");
+            if (lines.length) {
+                let shortestIndent = null;
+                lines.forEach(function (line) {
+                    if (/^[\s\t]*$/.test(line)) {
+                        return;
+                    }
+                    const indentStr = line.match(/^([\t\s]*)/)[1];
+                    if (
+                        shortestIndent === null ||
+                        indentStr.length < shortestIndent.length
+                    ) {
+                        shortestIndent = indentStr;
+                    }
                 });
+                if (shortestIndent) {
+
+                    var lineRe = new RegExp("^" + REGEXP_ESCAPE(shortestIndent));
+                    lines = lines.map(function (line, i) {
+                        return line.replace(lineRe, "");
+                    });
+                }
             }
 
             for (var i = 0; i < lineCounts.start ; i++) {

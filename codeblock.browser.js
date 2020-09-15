@@ -626,7 +626,7 @@ exports.purifyCode = function (codeIn, options) {
                     {
                         raw: restoreStringBlocks(lines
                             .join("\\n")
-                            .replace(/\$/g, '$$$$')
+//                            .replace(/\$/g, '$$$$')
                             .replace(/(___NeWlInE_KeEp_OrIgInAl___)/g, "\\$1")), //.replace(/\\n/g, "___NeWlInE___")
                     },
                     match[2],
@@ -645,12 +645,14 @@ exports.purifyCode = function (codeIn, options) {
                 code = code.replace(
                     //new RegExp(REGEXP_ESCAPE('(' + match[1] + ')'), "g"),
                     '(' + match[1] + ')',
-                    (
-                        hasMoreLayers ?
-                            JSON.stringify(replacement)
-                            :
-                            JSON.stringify(replacement, null, 4)
-                    )
+                    function () {
+                        return (
+                            hasMoreLayers ?
+                                JSON.stringify(replacement)
+                                :
+                                JSON.stringify(replacement, null, 4)
+                        );
+                    }
                 );
 
             } else
@@ -698,7 +700,9 @@ exports.purifyCode = function (codeIn, options) {
 
                 code = code.replace(
                     new RegExp(REGEXP_ESCAPE('(' + match[1] + ')'), "g"),
-                    replacement
+                    function () {
+                        return replacement;
+                    }
                 );
 
             } else {
@@ -749,7 +753,9 @@ exports.purifyCode = function (codeIn, options) {
                 if (exports.DEBUG) process.stdout.write(replacement + "\n");
                 if (exports.DEBUG) console.log("<<<< replacement".yellow);
 
-                code = code.replace(new RegExp(REGEXP_ESCAPE(match[1]), "g"), replacement);
+                code = code.replace(new RegExp(REGEXP_ESCAPE(match[1]), "g"), function () {
+                    return replacement;
+                });
             }
         });
 
@@ -796,9 +802,11 @@ exports.purifyCode = function (codeIn, options) {
                 (shebang && shebang[1]) || ''
             ) + ___WrApCoDe___.toString().replace(
                 /\$\$__filename\$\$/g,
-                options.standalone ?
-                    require.resolve("./codeblock.rt0") :
-                    (options.codeblockPackageUri || __dirname)
+                function () {
+                    return options.standalone ?
+                        require.resolve("./codeblock.rt0") :
+                        (options.codeblockPackageUri || __dirname);
+                }
             ) + ";\n" + code;
         }
 
@@ -855,7 +863,9 @@ exports.purifyCode = function (codeIn, options) {
                 return code;
             }
             stringBlocks.forEach(function (blockCode, i) {                    
-                code = code.replace(new RegExp("___StRiNg_BlOcC_" + i + "___", "g"), blockCode);
+                code = code.replace(new RegExp("___StRiNg_BlOcC_" + i + "___", "g"), function () {
+                    return blockCode;
+                });
             });
             return code;
         }
@@ -986,7 +996,9 @@ exports.freezeToSource = function (obj, options) {
         var indent = "";
         for (var i=0;i<match[1].length;i++) indent += " ";
         var code = segments[parseInt(match[segmentMatchIndex])](indent);
-        source = source.replace(new RegExp(REGEXP_ESCAPE(match[replaceMatchIndex]), "g"), code);
+        source = source.replace(new RegExp(REGEXP_ESCAPE(match[replaceMatchIndex]), "g"), function () {
+            return code;
+        });
     }
     return source;
 }

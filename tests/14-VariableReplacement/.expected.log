@@ -2,7 +2,8 @@
 
 
   Variable Replacement
-    ✓ Source to Serialized (with $)
+    ✓ Source to serialized and back (with $)
+    ✓ Source to serialized and back (with various special characters)
 
 
 

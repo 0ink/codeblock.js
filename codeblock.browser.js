@@ -1054,6 +1054,13 @@ exports.isCodeblock = function (obj) {
     );
 }
 
+exports.containsCodeblock = function (str) {
+    if (/>>>/.test(str)) {
+        return true;
+    }
+    return false;
+}
+
 exports.compileAll = function (obj) {
     const TRAVERSE = require("traverse");
     return TRAVERSE(obj).map(function (value) {
